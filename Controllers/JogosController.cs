@@ -256,9 +256,8 @@ namespace catalogo_jogos.Controllers
         }
 
 
-        //Filtragem universal E Ordenação (Com CTE para corrigir o EverCompleted)
-        //Filtragem universal E Ordenação (Atualizado para filtro de ano)
-        public IActionResult ListaJogos(string termoBusca, string sortOrder, int? filtroAno)
+        //Filtragem universal E Ordenação (Atualizado para filtro 'Nunca Zerados')
+        public IActionResult ListaJogos(string termoBusca, string sortOrder, int? filtroAno, bool? filtroNaoZerados)
         {
             var listaJogos = new List<Jogo>();
 
@@ -268,22 +267,19 @@ namespace catalogo_jogos.Controllers
             {
                 connectionYears.Open();
                 var yearsCommand = connectionYears.CreateCommand();
-                // Busca os anos, do mais novo para o mais antigo
                 yearsCommand.CommandText = "SELECT DISTINCT Year FROM Games ORDER BY Year DESC";
                 using (var yearsReader = yearsCommand.ExecuteReader())
                 {
-                    while(yearsReader.Read())
+                    while (yearsReader.Read())
                     {
                         distinctYears.Add(yearsReader.GetInt32(0));
                     }
                 }
             }
-            // Envia a lista de anos para a View
             ViewData["DistinctYears"] = distinctYears;
 
 
             // --- ETAPA 2: Garantir que a coluna Ordem exista ---
-            // (Essa lógica de segurança que já tínhamos)
             using (var connectionCheck = new SqliteConnection(_connectionString))
             {
                 connectionCheck.Open();
@@ -308,7 +304,7 @@ namespace catalogo_jogos.Controllers
             string sql = @"
                 WITH AllGamesWithCompletion AS (
                     SELECT Id, Name, Year, FinishedInThisYear, Grade, Ordem,
-                           MAX(FinishedInThisYear) OVER (PARTITION BY Name) AS EverCompleted
+                           MAX(CASE WHEN FinishedInThisYear = 1 OR FinishedInThisYear = 'true' THEN 1 ELSE 0 END) OVER (PARTITION BY Name) AS EverCompleted
                     FROM Games
                 )
                 SELECT Id, Name, Year, FinishedInThisYear, Grade, EverCompleted, Ordem
@@ -346,14 +342,20 @@ namespace catalogo_jogos.Controllers
                 command.Parameters.AddWithValue("$filtroAno", filtroAno.Value);
             }
 
-            // 4. Juntar todos os filtros com "AND"
+            // 4. ADICIONAR O FILTRO DE 'NUNCA ZERADOS' (filtroNaoZerados)
+            if (filtroNaoZerados == true)
+            {
+                // A coluna 'EverCompleted' é 0 (false) ou 1 (true)
+                whereClauses.Add("EverCompleted = 0");
+            }
+
+            // 5. Juntar todos os filtros com "AND"
             if (whereClauses.Count > 0)
             {
                 sql += $" WHERE {string.Join(" AND ", whereClauses)}";
             }
 
-            // 5. Adicionar a ordenação
-            // (O padrão já é 'Year, Ordem', como definimos)
+            // 6. Adicionar a ordenação
             switch (sortOrder)
             {
                 case "name":
@@ -367,12 +369,13 @@ namespace catalogo_jogos.Controllers
 
             command.CommandText = sql;
 
-            // 6. Passar os filtros atuais de volta para a View
+            // 7. Passar os filtros atuais de volta para a View
             ViewData["CurrentFilter"] = termoBusca;
             ViewData["CurrentYearFilter"] = filtroAno;
             ViewData["CurrentSortOrder"] = sortOrder;
+            ViewData["CurrentNaoZeradosFilter"] = filtroNaoZerados; // <-- NOVO
 
-            // 7. Executar a query
+            // 8. Executar a query
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -393,7 +396,7 @@ namespace catalogo_jogos.Controllers
 
         public IActionResult Estatisticas()
         {
-            // O ViewModel agora inicializa as listas graças ao construtor
+            // O ViewModel (EstatisticasViewModel.cs) inicializa as listas
             var viewModel = new EstatisticasViewModel
             {
                 LastGameFinished = "Nenhum jogo zerado registrado"
@@ -403,7 +406,7 @@ namespace catalogo_jogos.Controllers
             connection.Open();
 
             // ---
-            // 1. QUERY 1: ÚLTIMO JOGO ZERADO (Sem alteração)
+            // 1. QUERY 1: ÚLTIMO JOGO ZERADO
             // ---
             var cmdLastGame = connection.CreateCommand();
             cmdLastGame.CommandText = @"
@@ -421,11 +424,9 @@ namespace catalogo_jogos.Controllers
             }
 
             // ---
-            // 2. QUERY 2: JOGO(S) ZERADO(S) MAIS VEZES (Lógica atualizada)
+            // 2. QUERY 2: JOGO(S) ZERADO(S) MAIS VEZES
             // ---
             var cmdMostFinished = connection.CreateCommand();
-            // Usamos um "Common Table Expression" (WITH) para primeiro
-            // contar os jogos, e depois selecionar TODOS que têm o COUNT máximo.
             cmdMostFinished.CommandText = @"
                 WITH GameCounts AS (
                     SELECT Name, COUNT(*) AS Count
@@ -441,7 +442,6 @@ namespace catalogo_jogos.Controllers
 
             using (var reader = cmdMostFinished.ExecuteReader())
             {
-                // Usamos 'while' para pegar todas as linhas (jogos empatados)
                 while (reader.Read())
                 {
                     viewModel.MostFinishedGame.Add($"{reader.GetString(0)} ({reader.GetInt32(1)} vezes)");
@@ -453,7 +453,7 @@ namespace catalogo_jogos.Controllers
             }
 
             // ---
-            // 3. QUERY 3: JOGO(S) REGISTRADO(S) MAIS VEZES (Lógica atualizada)
+            // 3. QUERY 3: JOGO(S) REGISTRADO(S) MAIS VEZES
             // ---
             var cmdMostPlayed = connection.CreateCommand();
             cmdMostPlayed.CommandText = @"
@@ -470,7 +470,6 @@ namespace catalogo_jogos.Controllers
 
             using (var reader = cmdMostPlayed.ExecuteReader())
             {
-                // Usamos 'while' para pegar todas as linhas
                 while (reader.Read())
                 {
                     viewModel.MostPlayedGame.Add($"{reader.GetString(0)} ({reader.GetInt32(1)} registros)");

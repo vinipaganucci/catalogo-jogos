@@ -2,12 +2,13 @@
 
 @{
     ViewData["Title"] = "Registros Salvos";
-
+    
     // Pega os dados que o Controller enviou
     var distinctYears = ViewData["DistinctYears"] as List<int> ?? new List<int>();
     var currentFilter = ViewData["CurrentFilter"] as string;
     var currentYearFilter = ViewData["CurrentYearFilter"] as int?;
     var currentSortOrder = ViewData["CurrentSortOrder"] as string;
+    var currentNaoZeradosFilter = ViewData["CurrentNaoZeradosFilter"] as bool?; // <-- NOVO
 }
 
 <div class="container mt-5">
@@ -36,8 +37,21 @@
            asp-route-sortOrder="name"
            asp-route-termoBusca="@currentFilter"
            asp-route-filtroAno="@currentYearFilter"
+           asp-route-filtroNaoZerados="@currentNaoZeradosFilter" 
            class="btn btn-sm btn-light border">
             Ordem Alfabética (A-Z)
+        </a>
+
+        @{
+            var btnClassNuncaZerados = (currentNaoZeradosFilter == true) ? "btn-primary" : "btn-light border";
+        }
+        <a asp-action="ListaJogos"
+           asp-route-filtroNaoZerados="true"
+           asp-route-filtroAno="@currentYearFilter"
+           asp-route-termoBusca="@currentFilter"
+           asp-route-sortOrder="@currentSortOrder"
+           class="btn btn-sm @btnClassNuncaZerados">
+            Jogos Nunca Zerados
         </a>
     </div>
 
@@ -45,18 +59,22 @@
         <strong>Filtrar por Ano:</strong>
         @foreach (var year in distinctYears)
         {
-            // Pinta o botão de azul se ele for o filtro ativo
             var btnClass = (year == currentYearFilter) ? "btn-primary" : "btn-light border";
-
+            
             <a asp-action="ListaJogos"
                asp-route-filtroAno="@year"
                asp-route-termoBusca="@currentFilter"
                asp-route-sortOrder="@currentSortOrder"
+               asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
                class="btn btn-sm @btnClass">
                 @year
             </a>
         }
     </div>
+
+   
+        
+    
 
 
     @if (Model.Count == 0)
