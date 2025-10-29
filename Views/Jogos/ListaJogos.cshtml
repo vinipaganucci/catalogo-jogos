@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Registros Salvos";
+    var currentFilter = ViewData["CurrentFilter"] as string;
 }
 
 
@@ -13,13 +14,35 @@
 
         <label class="me-2">Buscar:</label>
 
-        <input type="text" name="termoBusca" class="form-control me-2" style="width: 200px;" placeholder="Nome, ano ou nota..." />
+        <input type="text"
+               name="termoBusca"
+               class="form-control me-2"
+               style="width: 200px;"
+               placeholder="Nome, ano ou nota..."
+               value="@currentFilter" />
 
         <button type="submit" class="btn btn-primary me-2">Buscar</button>
 
         <a asp-action="ListaJogos" class="btn btn-outline-secondary">Resetar</a>
     </form>
 
+    <div class="mb-3">
+        <strong>Ordenar por:</strong>
+
+        <a asp-action="ListaJogos"
+           asp-route-sortOrder="name"
+           asp-route-termoBusca="@currentFilter"
+           class="btn btn-sm btn-light border">
+            Ordem Alfabética (A-Z)
+        </a>
+
+        <a asp-action="ListaJogos"
+           asp-route-sortOrder="year"
+           asp-route-termoBusca="@currentFilter"
+           class="btn btn-sm btn-light border">
+            Ano (Crescente)
+        </a>
+    </div>
 
     @if (Model.Count == 0)
     {

@@ -104,9 +104,9 @@ namespace catalogo_jogos.Controllers
             return RedirectToAction("ListaJogos");
         }
 
-        //Lista os jogos com possibilidade de filtro
         //Filtragem universal (Nome, Ano, Nota)
-        public IActionResult ListaJogos(string termoBusca)
+        //Filtragem universal E Ordenação
+        public IActionResult ListaJogos(string termoBusca, string sortOrder)
         {
             var listaJogos = new List<Jogo>();
 
@@ -115,25 +115,40 @@ namespace catalogo_jogos.Controllers
 
             var command = connection.CreateCommand();
 
-            // Verifica se o usuário digitou algo para buscar
+            // 1. Iniciar a query base
+            string sql = "SELECT Id, Name, Year, FinishedInThisYear, Grade FROM Games";
+
+            // 2. Adicionar o filtro (WHERE), se existir
             if (!string.IsNullOrEmpty(termoBusca))
             {
-                command.CommandText = @"
-                    SELECT Id, Name, Year, FinishedInThisYear, Grade 
-                    FROM Games 
+                sql += @" 
                     WHERE Name LIKE $termoBusca 
                        OR CAST(Year AS TEXT) LIKE $termoBusca
                        OR Grade LIKE $termoBusca";
 
-                // Adiciona os '%' para a consulta LIKE (procurar "contém")
                 command.Parameters.AddWithValue("$termoBusca", $"%{termoBusca}%");
-            }
-            else
-            {
-                // Se não houver termo de busca, seleciona todos os jogos
-                command.CommandText = "SELECT Id, Name, Year, FinishedInThisYear, Grade FROM Games";
+
+                // Salva o filtro atual para ser usado pelos botões na View
+                ViewData["CurrentFilter"] = termoBusca;
             }
 
+            // 3. Adicionar a ordenação (ORDER BY)
+            switch (sortOrder)
+            {
+                case "year":
+                    sql += " ORDER BY Year"; // Ordena pelo ano (do menor para o maior)
+                    break;
+                case "name":
+                    sql += " ORDER BY Name"; // Ordena por nome (A-Z)
+                    break;
+                default:
+                    sql += " ORDER BY Name"; // Padrão: Ordem alfabética se nada for escolhido
+                    break;
+            }
+
+            command.CommandText = sql;
+
+            // 4. Executar a query
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
