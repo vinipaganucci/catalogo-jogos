@@ -8,7 +8,9 @@
     <h3 class="mb-4 text-center">@ViewData["Title"]</h3>
 
     <form asp-action="AtualizarObjetoJogo" method="post">
-        <input type="hidden" asp-for="Id" /> <div class="mb-3 row">
+        <input type="hidden" asp-for="Id" />
+
+        <div class="mb-3 row">
             <label class="col-sm-5 col-form-label" asp-for="Name">Título:</label>
             <div class="col-sm-7">
                 <input type="text" class="form-control" placeholder="Ex: Resident Evil" asp-for="Name" />
@@ -48,7 +50,7 @@
             <label class="col-sm-5 col-form-label" asp-for="FinishedInThisYear">Zerado Nesse Ano?:</label>
             <div class="col-sm-7">
                 <div class="form-check pt-2">
-                    <input asp-for="FinishedInThisYear" type="checkbox" class="form-check-input" value="true" />
+                    <input asp-for="FinishedInThisYear" type="checkbox" class="form-check-input" value="true" id="finishedCheckbox" />
                 </div>
             </div>
         </div>
@@ -57,7 +59,7 @@
             <label class="col-sm-5 col-form-label" asp-for="IsLastFinished">Este foi o último que zerei?</label>
             <div class="col-sm-7">
                 <div class="form-check pt-2">
-                    <input asp-for="IsLastFinished" type="checkbox" class="form-check-input" value="true" />
+                    <input asp-for="IsLastFinished" type="checkbox" class="form-check-input" value="true" id="lastFinishedCheckbox" />
                 </div>
             </div>
         </div>
@@ -76,21 +78,34 @@
             var lastFinishedContainer = document.getElementById('lastFinishedContainer');
             var currentYear = @currentYear;
 
+            // --- IDs DOS CHECKBOXES ---
+            var finishedCheck = document.getElementById('finishedCheckbox');
+            var lastFinishedCheck = document.getElementById('lastFinishedCheckbox');
+
+            // Lógica para mostrar/esconder o container
             function toggleLastFinishedCheckbox() {
                 if (parseInt(yearSelect.value) === currentYear) {
                     lastFinishedContainer.style.display = 'flex';
                 } else {
                     lastFinishedContainer.style.display = 'none';
-                    // Na tela de edição, NÃO desmarcamos o checkbox
-                    // pois o jogo pode ter sido o último de 2024, por exemplo.
-                    // Apenas escondemos o campo.
                 }
             }
-
-            // Executa ao carregar para mostrar/esconder
             toggleLastFinishedCheckbox();
-            // Executa ao mudar o ano
             yearSelect.addEventListener('change', toggleLastFinishedCheckbox);
+
+
+            // --- NOVA LÓGICA ---
+            lastFinishedCheck.addEventListener('change', function() {
+                if (lastFinishedCheck.checked) {
+                    finishedCheck.checked = true;
+                }
+            });
+
+            finishedCheck.addEventListener('change', function() {
+                if (!finishedCheck.checked) {
+                    lastFinishedCheck.checked = false;
+                }
+            });
         });
     </script>
 }

@@ -3,14 +3,14 @@
     ViewData["Title"] = "Estatísticas";
 }
 
-<div classa="row">
+<div class="row">
     <div class="col-md-6 offset-md-3">
         <h1 class="text-center">Estatísticas</h1>
         <br />
 
         <div class="card mb-3">
             <div class="card-header">
-                Último Jogo Zerado (do ano mais recente)
+                Último Jogo Zerado
             </div>
             <div class="card-body">
                 <h4 class="card-title">@Model.LastGameFinished</h4>
@@ -19,24 +19,29 @@
 
         <div class="card mb-3">
             <div class="card-header">
-                Jogo Zerado Mais Vezes
+                Jogos Zerados Mais Vezes
             </div>
             <div class="card-body">
-                <h4 class="card-title">@Model.MostFinishedGame</h4>
+                @foreach (var game in Model.MostFinishedGame)
+                {
+                    <h4 class="card-title">@game</h4>
+                }
             </div>
         </div>
 
         <div class="card mb-3">
             <div class="card-header">
-                Jogo Registrado Mais Vezes (Zerado ou Não)
+                Jogos Que Foram Jogados Mais Vezes (Zerado ou Não)
             </div>
             <div class="card-body">
-                <h4 class="card-title">@Model.MostPlayedGame</h4>
+                @foreach (var game in Model.MostPlayedGame)
+                {
+                    <h4 class="card-title">@game</h4>
+                }
             </div>
         </div>
 
         <div class="mt-4">
-            @* Botão para voltar para a lista de jogos *@
             <a asp-controller="Jogos" asp-action="ListaJogos" class="btn btn-secondary">Voltar para a Lista</a>
         </div>
     </div>

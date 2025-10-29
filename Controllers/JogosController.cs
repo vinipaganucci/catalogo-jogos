@@ -270,7 +270,7 @@ namespace catalogo_jogos.Controllers
             switch (sortOrder)
             {
                 case "year":
-                    sql += " ORDER BY Year";
+                    sql += " ORDER BY Year, Id";
                     break;
                 case "name":
                     sql += " ORDER BY Name";
@@ -303,19 +303,17 @@ namespace catalogo_jogos.Controllers
 
         public IActionResult Estatisticas()
         {
+            // O ViewModel agora inicializa as listas graças ao construtor
             var viewModel = new EstatisticasViewModel
             {
-                LastGameFinished = "Nenhum jogo zerado registrado",
-                MostFinishedGame = "N/A",
-                MostPlayedGame = "N/A"
+                LastGameFinished = "Nenhum jogo zerado registrado"
             };
 
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
             // ---
-            // 2. QUERY 1: ÚLTIMO JOGO ZERADO (LOGICA ATUALIZADA)
-            // Busca o único jogo marcado com IsLastFinished = 1
+            // 1. QUERY 1: ÚLTIMO JOGO ZERADO (Sem alteração)
             // ---
             var cmdLastGame = connection.CreateCommand();
             cmdLastGame.CommandText = @"
@@ -333,42 +331,64 @@ namespace catalogo_jogos.Controllers
             }
 
             // ---
-            // 3. QUERY 2: JOGO ZERADO MAIS VEZES (Sem alteração)
+            // 2. QUERY 2: JOGO(S) ZERADO(S) MAIS VEZES (Lógica atualizada)
             // ---
             var cmdMostFinished = connection.CreateCommand();
+            // Usamos um "Common Table Expression" (WITH) para primeiro
+            // contar os jogos, e depois selecionar TODOS que têm o COUNT máximo.
             cmdMostFinished.CommandText = @"
-                SELECT Name, COUNT(*) AS Count 
-                FROM Games 
-                WHERE FinishedInThisYear = 1 
-                GROUP BY Name 
-                ORDER BY Count DESC 
-                LIMIT 1";
+                WITH GameCounts AS (
+                    SELECT Name, COUNT(*) AS Count
+                    FROM Games
+                    WHERE FinishedInThisYear = 1
+                    GROUP BY Name
+                )
+                SELECT Name, Count
+                FROM GameCounts
+                WHERE Count = (SELECT MAX(Count) FROM GameCounts)
+                ORDER BY Name;
+            ";
 
             using (var reader = cmdMostFinished.ExecuteReader())
             {
-                if (reader.Read())
+                // Usamos 'while' para pegar todas as linhas (jogos empatados)
+                while (reader.Read())
                 {
-                    viewModel.MostFinishedGame = $"{reader.GetString(0)} ({reader.GetInt32(1)} vezes)";
+                    viewModel.MostFinishedGame.Add($"{reader.GetString(0)} ({reader.GetInt32(1)} vezes)");
                 }
+            }
+            if (viewModel.MostFinishedGame.Count == 0)
+            {
+                viewModel.MostFinishedGame.Add("N/A");
             }
 
             // ---
-            // 4. QUERY 3: JOGO JOGADO (REGISTRADO) MAIS VEZES (Sem alteração)
+            // 3. QUERY 3: JOGO(S) REGISTRADO(S) MAIS VEZES (Lógica atualizada)
             // ---
             var cmdMostPlayed = connection.CreateCommand();
             cmdMostPlayed.CommandText = @"
-                SELECT Name, COUNT(*) AS Count 
-                FROM Games 
-                GROUP BY Name 
-                ORDER BY Count DESC 
-                LIMIT 1";
+                WITH GameCounts AS (
+                    SELECT Name, COUNT(*) AS Count
+                    FROM Games
+                    GROUP BY Name
+                )
+                SELECT Name, Count
+                FROM GameCounts
+                WHERE Count = (SELECT MAX(Count) FROM GameCounts)
+                ORDER BY Name;
+            ";
 
             using (var reader = cmdMostPlayed.ExecuteReader())
             {
-                if (reader.Read())
+                // Usamos 'while' para pegar todas as linhas
+                while (reader.Read())
                 {
-                    viewModel.MostPlayedGame = $"{reader.GetString(0)} ({reader.GetInt32(1)} registros)";
+                    viewModel.MostPlayedGame.Add($"{reader.GetString(0)} ({reader.GetInt32(1)} registros)");
                 }
+            }
+            if (viewModel.MostPlayedGame.Count == 0)
+            {
+                viewModel.MostPlayedGame.Add("N/A");
             }
 
             return View(viewModel);
