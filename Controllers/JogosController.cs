@@ -483,5 +483,46 @@ namespace catalogo_jogos.Controllers
             return View(viewModel);
         }
 
+        [HttpPost]
+        public IActionResult SalvarOrdemLote(Dictionary<int, int> ordemValores)
+        {
+            // 'ordemValores' é um dicionário onde:
+            // Key   = O Id do jogo (ex: 118)
+            // Value = O novo valor de 'Ordem' que você digitou (ex: 124)
+
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+            // Usamos uma Transação para garantir que ou TODOS os updates
+            // funcionam, ou NENHUM funciona. É mais seguro.
+            using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                // Loop por cada par (Id, Ordem) que recebemos da View
+                foreach (var par in ordemValores)
+                {
+                    var command = connection.CreateCommand();
+                    command.Transaction = transaction;
+                    command.CommandText = "UPDATE Games SET Ordem = $ordem WHERE Id = $id";
+                    command.Parameters.AddWithValue("$ordem", par.Value); // O novo valor da Ordem
+                    command.Parameters.AddWithValue("$id", par.Key);       // O Id do Jogo
+                    command.ExecuteNonQuery();
+                }
+
+                // Se o loop terminou sem erros, salva tudo
+                transaction.Commit();
+            }
+            catch (Exception)
+            {
+                // Se deu qualquer erro, desfaz tudo
+                transaction.Rollback();
+                throw; // Lança o erro para a tela de erro
+            }
+
+            TempData["Mensagem"] = "Ordem dos jogos atualizada com sucesso!";
+            // Redireciona de volta para a ListaJogos (para vermos o resultado)
+            return RedirectToAction("ListaJogos");
+        }
+
     }
 }

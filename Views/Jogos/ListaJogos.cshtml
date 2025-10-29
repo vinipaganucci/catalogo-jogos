@@ -1,33 +1,39 @@
 ﻿@model List<catalogo_jogos.Models.Jogo>
-
+@inject System.Text.Encodings.Web.JavaScriptEncoder jsEncoder
 @{
     ViewData["Title"] = "Registros Salvos";
-    
+
     // Pega os dados que o Controller enviou
     var distinctYears = ViewData["DistinctYears"] as List<int> ?? new List<int>();
     var currentFilter = ViewData["CurrentFilter"] as string;
     var currentYearFilter = ViewData["CurrentYearFilter"] as int?;
     var currentSortOrder = ViewData["CurrentSortOrder"] as string;
-    var currentNaoZeradosFilter = ViewData["CurrentNaoZeradosFilter"] as bool?; // <-- NOVO
+    var currentNaoZeradosFilter = ViewData["CurrentNaoZeradosFilter"] as bool?;
 }
 
 <div class="container mt-5">
     <h3 class="mb-4 text-center">@ViewData["Title"]</h3>
 
-    <form method="get" asp-action="ListaJogos" class="mb-3 d-flex align-items-center">
-        <label class="me-2">Buscar:</label>
-        <input type="text"
-               name="termoBusca"
-               class="form-control me-2"
-               style="width: 200px;"
-               placeholder="Nome, ano ou nota..."
-               value="@currentFilter" />
-        <button type="submit" class="btn btn-primary me-2">Buscar</button>
-        <a asp-controller="Jogos" asp-action="Estatisticas" class="btn btn-primary me-2">
-            Ver Estatísticas
-        </a>
-        <a asp-action="ListaJogos" class="btn btn-outline-secondary">Resetar</a>
-    </form>
+    <div class="mb-3 d-flex align-items-center justify-content-between">
+        <form method="get" asp-action="ListaJogos" class="d-flex align-items-center">
+            <label class="me-2">Buscar:</label>
+            <input type="text"
+                   name="termoBusca"
+                   class="form-control me-2"
+                   style="width: 200px;"
+                   placeholder="Nome, ano ou nota..."
+                   value="@currentFilter" />
+            <button type="submit" class="btn btn-primary me-2">Buscar</button>
+            <a asp-controller="Jogos" asp-action="Estatisticas" class="btn btn-primary me-2">
+                Ver Estatísticas
+            </a>
+            <a asp-action="ListaJogos" class="btn btn-outline-secondary me-2">Resetar</a>
+        </form>
+
+        <button type="submit" class="btn btn-success" form="formSalvarOrdem">
+            Salvar Ordem
+        </button>
+    </div>
 
     <hr />
 
@@ -37,11 +43,29 @@
            asp-route-sortOrder="name"
            asp-route-termoBusca="@currentFilter"
            asp-route-filtroAno="@currentYearFilter"
-           asp-route-filtroNaoZerados="@currentNaoZeradosFilter" 
+           asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
            class="btn btn-sm btn-light border">
             Ordem Alfabética (A-Z)
         </a>
+    </div>
+    <div class="mb-3">
+        <strong>Filtrar por Ano:</strong>
+        @foreach (var year in distinctYears)
+        {
+            var btnClass = (year == currentYearFilter) ? "btn-primary" : "btn-light border";
 
+            <a asp-action="ListaJogos"
+               asp-route-filtroAno="@year"
+               asp-route-termoBusca="@currentFilter"
+               asp-route-sortOrder="@currentSortOrder"
+               asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
+               class="btn btn-sm @btnClass">
+                @year
+            </a>
+        }
+    </div>
+    <div class="mb-3">
+        <strong>Outros Filtros:</strong>
         @{
             var btnClassNuncaZerados = (currentNaoZeradosFilter == true) ? "btn-primary" : "btn-light border";
         }
@@ -54,27 +78,6 @@
             Jogos Nunca Zerados
         </a>
     </div>
-
-    <div class="mb-3">
-        <strong>Filtrar por Ano:</strong>
-        @foreach (var year in distinctYears)
-        {
-            var btnClass = (year == currentYearFilter) ? "btn-primary" : "btn-light border";
-            
-            <a asp-action="ListaJogos"
-               asp-route-filtroAno="@year"
-               asp-route-termoBusca="@currentFilter"
-               asp-route-sortOrder="@currentSortOrder"
-               asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
-               class="btn btn-sm @btnClass">
-                @year
-            </a>
-        }
-    </div>
-
-   
-        
-    
 
 
     @if (Model.Count == 0)
@@ -89,48 +92,84 @@
                 @TempData["Mensagem"]
             </div>
         }
-        <table class="table table-bordered table-striped">
-            <thead class="table-light">
-                <tr>
-                    <th>ID</th>
-                    <th>Nome</th>
-                    <th>Ano Que Foi Finalizado</th>
-                    <th>Finalizado Esse Ano?</th>
-                    <th>Nota</th>
-                    <th>Já Zerado Alguma Vez?</th>
-                    <th>Ordem</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var r in Model)
-                {
+
+        <form asp-action="SalvarOrdemLote" method="post" id="formSalvarOrdem">
+
+            <table class="table table-bordered table-striped">
+                <thead class="table-light">
                     <tr>
-                        <td>@r.Id</td>
-                        <td>@r.Name</td>
-                        <td>@r.Year</td>
-                        <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.FinishedInThisYear)</td>
-                        <td>@r.Grade</td>
-                        <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.EverCompleted)</td>
-                        <td>@r.Ordem</td>
-                        <td>
-                            <a asp-action="TelaEdicao" asp-route-id="@r.Id" class="btn btn-warning btn-sm">Editar</a>
-                            <form asp-action="ExcluirJogo" asp-route-id="@r.Id" method="post" style="display: inline;">
-                                <button type="submit"
-                                        class="btn btn-danger btn-sm"
-                                        onclick="return confirm('Tem certeza que deseja excluir o jogo \'@r.Name\'?');">
-                                    Excluir
-                                </button>
-                            </form>
-                            <a asp-action="Detalhar" asp-route-id="@r.Id" class="btn btn-info btn-sm">Detalhes</a>
-                        </td>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Ano Que Foi Finalizado</th>
+                        <th>Finalizado Esse Ano?</th>
+                        <th>Nota</th>
+                        <th>Já Zerado Alguma Vez?</th>
+                        <th style="width: 100px;">Ordem</th>
+                        <th>Ações</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td>@r.Id</td>
+                            <td>@r.Name</td>
+                            <td>@r.Year</td>
+                            <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.FinishedInThisYear)</td>
+                            <td>@r.Grade</td>
+                            <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.EverCompleted)</td>
+
+                            <td>
+                                <input type="number"
+                                       class="form-control form-control-sm"
+                                       value="@r.Ordem"
+                                       name="ordemValores[@r.Id]" />
+                            </td>
+
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a asp-action="TelaEdicao" asp-route-id="@r.Id" class="btn btn-warning btn-sm">Editar</a>
+
+                                    <a href="#" class="btn btn-danger btn-sm"
+                                       onclick="excluirJogo(event, @r.Id, '@jsEncoder.Encode(r.Name)')">
+                                        Excluir
+                                    </a>
+
+                                    <a asp-action="Detalhar" asp-route-id="@r.Id" class="btn btn-info btn-sm">Detalhes</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </form>
     }
 
     <div class="text-center mt-3">
         <a asp-action="Index" class="btn btn-secondary">Voltar</a>
     </div>
 </div>
+
+
+@section Scripts {
+    <script>
+        function excluirJogo(event, id, nome) {
+            event.preventDefault(); // Impede o link <a> de navegar
+
+            if (confirm("Tem certeza que deseja excluir o jogo '" + nome + "'?")) {
+                // 1. Cria um formulário dinâmico na memória
+                var form = document.createElement('form');
+                form.method = 'post';
+
+                // Monta a URL correta para a action ExcluirJogo
+                form.action = '/Jogos/ExcluirJogo/' + id;
+
+                // 2. Adiciona o form ao corpo da página (invisível)
+                document.body.appendChild(form);
+
+                // 3. Envia o formulário
+                form.submit();
+            }
+        }
+    </script>
+}
