@@ -1,6 +1,7 @@
 ﻿using catalogo_jogos.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
 using System.Diagnostics;
 
@@ -17,17 +18,23 @@ namespace catalogo_jogos.Controllers
             return View();
         }
 
-        
-        
 
         //Tela de edição dos jogos
         public IActionResult TelaEdicao(int id)
-{
+        {
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
             var command = connection.CreateCommand();
-            command.CommandText = "SELECT Id, Name, Year, FinishedInThisYear, Grade FROM Games WHERE Id = $id";
+            // ATUALIZAÇÃO: Usamos uma sub-query para obter o 'EverCompleted'
+            command.CommandText = @"
+            SELECT Id, Name, Year, FinishedInThisYear, Grade,
+                   (SELECT MAX(g2.FinishedInThisYear) 
+                    FROM Games g2 
+                    WHERE g2.Name = Games.Name) AS EverCompleted
+            FROM Games
+            WHERE Id = $id";
+
             command.Parameters.AddWithValue("$id", id);
 
             using var reader = command.ExecuteReader();
@@ -39,7 +46,9 @@ namespace catalogo_jogos.Controllers
                     Name = reader.GetString(1),
                     Year = reader.GetInt32(2),
                     FinishedInThisYear = reader.GetBoolean(3),
-                    Grade = reader.GetString(4)
+                    Grade = reader.GetString(4),
+                    // ATUALIZAÇÃO: Ler a 6ª coluna (índice 5)
+                    EverCompleted = reader.GetBoolean(5)
                 };
                 return View(jogo);
             }
@@ -104,7 +113,24 @@ namespace catalogo_jogos.Controllers
             return RedirectToAction("ListaJogos");
         }
 
-        //Filtragem universal E Ordenação (Com lógica booleana)
+        //Ação do botão de excluir
+        [HttpPost]
+        public IActionResult ExcluirJogo(int id)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var command = connection.CreateCommand();
+            command.CommandText = "DELETE FROM Games WHERE Id = $id";
+            command.Parameters.AddWithValue("$id", id);
+            command.ExecuteNonQuery();
+
+            // Mensagem de sucesso (igual você faz na atualização)
+            TempData["Mensagem"] = "Jogo excluído com sucesso!";
+            return RedirectToAction("ListaJogos");
+        }
+
+        //Filtragem universal E Ordenação (Com CTE para corrigir o EverCompleted)
         public IActionResult ListaJogos(string termoBusca, string sortOrder)
         {
             var listaJogos = new List<Jogo>();
@@ -114,13 +140,21 @@ namespace catalogo_jogos.Controllers
 
             var command = connection.CreateCommand();
 
-            // 1. Iniciar a query base
-            string sql = "SELECT Id, Name, Year, FinishedInThisYear, Grade FROM Games";
+            // 1. Iniciar a query base com o CTE (Common Table Expression)
+            // Isso força o cálculo do EverCompleted ANTES do filtro WHERE
+            string sql = @"
+                WITH AllGamesWithCompletion AS (
+                    SELECT Id, Name, Year, FinishedInThisYear, Grade,
+                           MAX(FinishedInThisYear) OVER (PARTITION BY Name) AS EverCompleted
+                    FROM Games
+                )
+                SELECT Id, Name, Year, FinishedInThisYear, Grade, EverCompleted
+                FROM AllGamesWithCompletion"; // Agora selecionamos da CTE
 
             // 2. Adicionar o filtro (WHERE), se existir
+            // Esta lógica será aplicada APÓS o cálculo do EverCompleted
             if (!string.IsNullOrEmpty(termoBusca))
             {
-                // Lista dinâmica de condições
                 var whereClauses = new List<string>
                 {
                     "Name LIKE $termoBusca",
@@ -128,31 +162,20 @@ namespace catalogo_jogos.Controllers
                     "Grade LIKE $termoBusca"
                 };
 
-                // Adiciona o parâmetro LIKE padrão
                 command.Parameters.AddWithValue("$termoBusca", $"%{termoBusca}%");
 
-                // --- INÍCIO DA NOVA LÓGICA ---
                 string termoLimpo = termoBusca.Trim();
-
-                // Verifica se a busca corresponde a "sim"
                 if (termoLimpo.Equals("sim", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Adiciona a condição booleana
                     whereClauses.Add("FinishedInThisYear = 1");
                 }
-                // Verifica se a busca corresponde a "não" (com e sem acento)
                 else if (termoLimpo.Equals("não", StringComparison.OrdinalIgnoreCase) ||
                          termoLimpo.Equals("nao", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Adiciona a condição booleana
                     whereClauses.Add("FinishedInThisYear = 0");
                 }
-                // --- FIM DA NOVA LÓGICA ---
 
-                // Junta todas as condições com "OR"
                 sql += $" WHERE {string.Join(" OR ", whereClauses)}";
-
-                // Salva o filtro atual para ser usado pelos botões na View
                 ViewData["CurrentFilter"] = termoBusca;
             }
 
@@ -160,15 +183,12 @@ namespace catalogo_jogos.Controllers
             switch (sortOrder)
             {
                 case "year":
-                    sql += " ORDER BY Year"; // Ordena pelo ano (do menor para o maior)
+                    sql += " ORDER BY Year";
                     break;
                 case "name":
-                    sql += " ORDER BY Name"; // Ordena por nome (A-Z)
+                    sql += " ORDER BY Name";
                     break;
                 default:
-                    // Se não houver filtro, ordena por nome. Se houver filtro, 
-                    // a ordem de relevância do LIKE é mantida (opcional, mas comum).
-                    // Vamos manter o padrão de ordenar por nome.
                     sql += " ORDER BY Name";
                     break;
             }
@@ -176,6 +196,7 @@ namespace catalogo_jogos.Controllers
             command.CommandText = sql;
 
             // 4. Executar a query
+            // A ordem das colunas (índices 0 a 5) permanece a mesma
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -185,13 +206,90 @@ namespace catalogo_jogos.Controllers
                     Name = reader.GetString(1),
                     Year = reader.GetInt32(2),
                     FinishedInThisYear = reader.GetBoolean(3),
-                    Grade = reader.GetString(4)
+                    Grade = reader.GetString(4),
+                    EverCompleted = reader.GetBoolean(5)
                 });
             }
 
             return View(listaJogos);
         }
 
+        public IActionResult Estatisticas()
+        {
+            // 1. Inicializar o ViewModel com valores padrão
+            var viewModel = new EstatisticasViewModel
+            {
+                LastGameFinished = "Nenhum jogo zerado registrado",
+                MostFinishedGame = "N/A",
+                MostPlayedGame = "N/A"
+            };
+
+            // Usar a connection string que você já tem no topo do arquivo
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            // ---
+            // 2. QUERY 1: ÚLTIMO JOGO ZERADO
+            // (Assumindo que FinishedInThisYear é 1 para 'true' e 0 para 'false')
+            // ---
+            var cmdLastGame = connection.CreateCommand();
+            cmdLastGame.CommandText = @"
+                SELECT Name, Year 
+                FROM Games 
+                WHERE FinishedInThisYear = 1 
+                ORDER BY Year DESC 
+                LIMIT 1";
+
+            using (var reader = cmdLastGame.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    viewModel.LastGameFinished = $"{reader.GetString(0)} (em {reader.GetInt32(1)})";
+                }
+            } // Primeiro reader é fechado aqui
+
+            // ---
+            // 3. QUERY 2: JOGO ZERADO MAIS VEZES
+            // ---
+            var cmdMostFinished = connection.CreateCommand();
+            cmdMostFinished.CommandText = @"
+                SELECT Name, COUNT(*) AS Count 
+                FROM Games 
+                WHERE FinishedInThisYear = 1 
+                GROUP BY Name 
+                ORDER BY Count DESC 
+                LIMIT 1";
+
+            using (var reader = cmdMostFinished.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    viewModel.MostFinishedGame = $"{reader.GetString(0)} ({reader.GetInt32(1)} vezes)";
+                }
+            } // Segundo reader é fechado aqui
+
+            // ---
+            // 4. QUERY 3: JOGO JOGADO (REGISTRADO) MAIS VEZES
+            // ---
+            var cmdMostPlayed = connection.CreateCommand();
+            cmdMostPlayed.CommandText = @"
+                SELECT Name, COUNT(*) AS Count 
+                FROM Games 
+                GROUP BY Name 
+                ORDER BY Count DESC 
+                LIMIT 1";
+
+            using (var reader = cmdMostPlayed.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    viewModel.MostPlayedGame = $"{reader.GetString(0)} ({reader.GetInt32(1)} registros)";
+                }
+            } // Terceiro reader é fechado aqui
+
+            // 5. Enviar o ViewModel preenchido para a View
+            return View(viewModel);
+        }
 
     }
 }

@@ -22,9 +22,14 @@
                value="@currentFilter" />
 
         <button type="submit" class="btn btn-primary me-2">Buscar</button>
-
+        <a asp-controller="Jogos" asp-action="Estatisticas" class="btn btn-primary me-2">
+            Ver Estatísticas
+        </a>
         <a asp-action="ListaJogos" class="btn btn-outline-secondary">Resetar</a>
+        
     </form>
+
+    <hr />
 
     <div class="mb-3">
         <strong>Ordenar por:</strong>
@@ -64,6 +69,7 @@
                     <th>Ano Que Foi Finalizado</th>
                     <th>Finalizado Esse Ano?</th>
                     <th>Nota</th>
+                    <th>Já Zerado Alguma Vez?</th>
                     <th>Ações</th>
                 </tr>
             </thead>
@@ -76,10 +82,23 @@
                         <td>@r.Year</td>
                         <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.FinishedInThisYear)</td>
                         <td>@r.Grade</td>
+
+                        <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.EverCompleted)</td>
+
                         <td>
                             <a asp-action="TelaEdicao" asp-route-id="@r.Id" class="btn btn-warning btn-sm">Editar</a>
+                            <form asp-action="ExcluirJogo" asp-route-id="@r.Id" method="post" style="display: inline;">
+                                <button type="submit"
+                                        class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Tem certeza que deseja excluir o jogo \'@r.Name\'?');">
+                                    Excluir
+                                </button>
+                            </form>
                             <a asp-action="Detalhar" asp-route-id="@r.Id" class="btn btn-info btn-sm">Detalhes</a>
-                        </td>                       
+
+                            
+                        </td>
+
                     </tr>
                 }
             </tbody>

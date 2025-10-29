@@ -1,0 +1,43 @@
+﻿@model catalogo_jogos.Models.EstatisticasViewModel
+@{
+    ViewData["Title"] = "Estatísticas";
+}
+
+<div classa="row">
+    <div class="col-md-6 offset-md-3">
+        <h1 class="text-center">Estatísticas</h1>
+        <br />
+
+        <div class="card mb-3">
+            <div class="card-header">
+                Último Jogo Zerado (do ano mais recente)
+            </div>
+            <div class="card-body">
+                <h4 class="card-title">@Model.LastGameFinished</h4>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                Jogo Zerado Mais Vezes
+            </div>
+            <div class="card-body">
+                <h4 class="card-title">@Model.MostFinishedGame</h4>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                Jogo Registrado Mais Vezes (Zerado ou Não)
+            </div>
+            <div class="card-body">
+                <h4 class="card-title">@Model.MostPlayedGame</h4>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            @* Botão para voltar para a lista de jogos *@
+            <a asp-controller="Jogos" asp-action="ListaJogos" class="btn btn-secondary">Voltar para a Lista</a>
+        </div>
+    </div>
+</div>
