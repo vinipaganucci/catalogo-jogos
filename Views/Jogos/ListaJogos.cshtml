@@ -10,11 +10,12 @@
     <h3 class="mb-4 text-center">@ViewData["Title"]</h3>
 
     <form method="get" asp-action="ListaJogos" class="mb-3 d-flex align-items-center">
-        <label class="me-2">Ano:</label>
 
-        <input type="number" name="ano" min="1900" max="2025" class="form-control me-2" style="width: 100px;" />
+        <label class="me-2">Buscar:</label>
 
-        <button type="submit" class="btn btn-primary me-2">Filtrar</button>
+        <input type="text" name="termoBusca" class="form-control me-2" style="width: 200px;" placeholder="Nome, ano ou nota..." />
+
+        <button type="submit" class="btn btn-primary me-2">Buscar</button>
 
         <a asp-action="ListaJogos" class="btn btn-outline-secondary">Resetar</a>
     </form>

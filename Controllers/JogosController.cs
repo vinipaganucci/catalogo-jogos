@@ -105,7 +105,8 @@ namespace catalogo_jogos.Controllers
         }
 
         //Lista os jogos com possibilidade de filtro
-        public IActionResult ListaJogos(int? ano)
+        //Filtragem universal (Nome, Ano, Nota)
+        public IActionResult ListaJogos(string termoBusca)
         {
             var listaJogos = new List<Jogo>();
 
@@ -113,13 +114,23 @@ namespace catalogo_jogos.Controllers
             connection.Open();
 
             var command = connection.CreateCommand();
-            if (ano.HasValue)
+
+            // Verifica se o usuário digitou algo para buscar
+            if (!string.IsNullOrEmpty(termoBusca))
             {
-                command.CommandText = "SELECT Id, Name, Year, FinishedInThisYear, Grade FROM Games WHERE Year = $ano";
-                command.Parameters.AddWithValue("$ano", ano.Value);
+                command.CommandText = @"
+                    SELECT Id, Name, Year, FinishedInThisYear, Grade 
+                    FROM Games 
+                    WHERE Name LIKE $termoBusca 
+                       OR CAST(Year AS TEXT) LIKE $termoBusca
+                       OR Grade LIKE $termoBusca";
+
+                // Adiciona os '%' para a consulta LIKE (procurar "contém")
+                command.Parameters.AddWithValue("$termoBusca", $"%{termoBusca}%");
             }
             else
             {
+                // Se não houver termo de busca, seleciona todos os jogos
                 command.CommandText = "SELECT Id, Name, Year, FinishedInThisYear, Grade FROM Games";
             }
 
