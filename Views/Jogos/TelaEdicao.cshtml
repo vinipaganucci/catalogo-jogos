@@ -1,41 +1,36 @@
 ﻿@model catalogo_jogos.Models.Jogo
 @{
-    ViewData["Title"] = "Editar";
+    ViewData["Title"] = "Editar Jogo";
+    int currentYear = DateTime.Now.Year;
 }
 
 <div class="container mt-5" style="max-width: 500px;">
-    <h3 class="mb-4 text-center">Editar</h3>
+    <h3 class="mb-4 text-center">@ViewData["Title"]</h3>
 
     <form asp-action="AtualizarObjetoJogo" method="post">
-        <input type="hidden" asp-for="Id" />
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label">Título:</label>
+        <input type="hidden" asp-for="Id" /> <div class="mb-3 row">
+            <label class="col-sm-5 col-form-label" asp-for="Name">Título:</label>
             <div class="col-sm-7">
                 <input type="text" class="form-control" placeholder="Ex: Resident Evil" asp-for="Name" />
             </div>
         </div>
 
         <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label">Ano Que Foi Jogado:</label>
+            <label class="col-sm-5 col-form-label" asp-for="Year">Ano Que Foi Jogado:</label>
             <div class="col-sm-7">
-                <input type="number" class="form-control" placeholder="Ex: 2025" min="1900" max="2025" asp-for="Year" />
-            </div>
-        </div>
-
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label">Zerado Nesse Ano?:</label>
-            <div class="col-sm-7">
-                <select class="form-control" asp-for="FinishedInThisYear">
-                    <option value="true">Sim</option>
-                    <option value="false">Não</option>
+                <select asp-for="Year" id="selectYear" class="form-select">
+                    @for (int year = currentYear + 1; year >= 2010; year--)
+                    {
+                        <option value="@year">@year</option>
+                    }
                 </select>
             </div>
         </div>
 
         <div class="mb-4 row">
-            <label class="col-sm-5 col-form-label">Nota:</label>
+            <label class="col-sm-5 col-form-label" asp-for="Grade">Nota:</label>
             <div class="col-sm-7">
-                <select class="form-control" asp-for="Grade">
+                <select class="form-select" asp-for="Grade">
                     <option selected disabled value="">Selecione uma nota</option>
                     <option value="Obra-Prima">Obra-Prima</option>
                     <option value="Excelente">Excelente</option>
@@ -49,15 +44,53 @@
             </div>
         </div>
 
-
-        <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-primary">Salvar</button>
-            <a asp-action="ListaJogos" class="btn btn-secondary">Cancelar</a>
+        <div class="mb-3 row">
+            <label class="col-sm-5 col-form-label" asp-for="FinishedInThisYear">Zerado Nesse Ano?:</label>
+            <div class="col-sm-7">
+                <div class="form-check pt-2">
+                    <input asp-for="FinishedInThisYear" type="checkbox" class="form-check-input" value="true" />
+                </div>
+            </div>
         </div>
 
-        @if (ViewBag.Mensagem != null)
-        {
-            <div class="alert alert-success mt-3">@ViewBag.Mensagem</div>
-        }
+        <div class="mb-3 row" id="lastFinishedContainer" style="display: none;">
+            <label class="col-sm-5 col-form-label" asp-for="IsLastFinished">Este foi o último que zerei?</label>
+            <div class="col-sm-7">
+                <div class="form-check pt-2">
+                    <input asp-for="IsLastFinished" type="checkbox" class="form-check-input" value="true" />
+                </div>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+            <a asp-action="ListaJogos" class="btn btn-secondary">Cancelar</a>
+        </div>
     </form>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var yearSelect = document.getElementById('selectYear');
+            var lastFinishedContainer = document.getElementById('lastFinishedContainer');
+            var currentYear = @currentYear;
+
+            function toggleLastFinishedCheckbox() {
+                if (parseInt(yearSelect.value) === currentYear) {
+                    lastFinishedContainer.style.display = 'flex';
+                } else {
+                    lastFinishedContainer.style.display = 'none';
+                    // Na tela de edição, NÃO desmarcamos o checkbox
+                    // pois o jogo pode ter sido o último de 2024, por exemplo.
+                    // Apenas escondemos o campo.
+                }
+            }
+
+            // Executa ao carregar para mostrar/esconder
+            toggleLastFinishedCheckbox();
+            // Executa ao mudar o ano
+            yearSelect.addEventListener('change', toggleLastFinishedCheckbox);
+        });
+    </script>
+}

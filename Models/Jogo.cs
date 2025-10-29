@@ -9,5 +9,7 @@
         public string Grade { get; set; }
 
         public bool EverCompleted { get; set; }
+
+        public bool IsLastFinished { get; set; }
     }
 }

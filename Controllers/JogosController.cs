@@ -22,16 +22,32 @@ namespace catalogo_jogos.Controllers
         //Tela de edição dos jogos
         public IActionResult TelaEdicao(int id)
         {
+            // Garante que a coluna existe (igual ao SaveGame)
+            using var connectionCheck = new SqliteConnection(_connectionString);
+            connectionCheck.Open();
+            try
+            {
+                var alterCommand = connectionCheck.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN IsLastFinished INTEGER DEFAULT 0";
+                alterCommand.ExecuteNonQuery();
+            }
+            catch (SqliteException ex)
+            {
+                if (!ex.Message.Contains("duplicate column name")) throw;
+            }
+            connectionCheck.Close();
+
+
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
             var command = connection.CreateCommand();
-            // ATUALIZAÇÃO: Usamos uma sub-query para obter o 'EverCompleted'
             command.CommandText = @"
             SELECT Id, Name, Year, FinishedInThisYear, Grade,
                    (SELECT MAX(g2.FinishedInThisYear) 
                     FROM Games g2 
-                    WHERE g2.Name = Games.Name) AS EverCompleted
+                    WHERE g2.Name = Games.Name) AS EverCompleted,
+                   IsLastFinished
             FROM Games
             WHERE Id = $id";
 
@@ -47,13 +63,30 @@ namespace catalogo_jogos.Controllers
                     Year = reader.GetInt32(2),
                     FinishedInThisYear = reader.GetBoolean(3),
                     Grade = reader.GetString(4),
-                    // ATUALIZAÇÃO: Ler a 6ª coluna (índice 5)
-                    EverCompleted = reader.GetBoolean(5)
+                    EverCompleted = reader.GetBoolean(5),
+                    IsLastFinished = reader.GetBoolean(6) // Lendo o novo campo
                 };
                 return View(jogo);
             }
 
             return NotFound();
+        }
+
+        //Exclui o jogo
+        [HttpPost]
+        public IActionResult ExcluirJogo(int id)
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var command = connection.CreateCommand();
+            command.CommandText = "DELETE FROM Games WHERE Id = $id";
+            command.Parameters.AddWithValue("$id", id);
+
+            command.ExecuteNonQuery();
+
+            TempData["Mensagem"] = "Jogo excluído com sucesso!";
+            return RedirectToAction("ListaJogos");
         }
 
 
@@ -64,26 +97,70 @@ namespace catalogo_jogos.Controllers
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
-            var command = connection.CreateCommand();
-            command.CommandText = @"
-            CREATE TABLE IF NOT EXISTS Games (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                Name TEXT,
-                Year INTEGER,
-                FinishedInThisYear TEXT,
-                Grade TEXT
-            );
+            // --- ETAPA 1: Garantir que a tabela e a coluna existem ---
+            var createCommand = connection.CreateCommand();
+            createCommand.CommandText = @"
+                CREATE TABLE IF NOT EXISTS Games (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Name TEXT,
+                    Year INTEGER,
+                    FinishedInThisYear INTEGER,
+                    Grade TEXT,
+                    IsLastFinished INTEGER DEFAULT 0 
+                );";
+            createCommand.ExecuteNonQuery();
 
-            INSERT INTO Games (Name, Year, FinishedInThisYear, Grade)
-            VALUES ($name, $year, $finished, $grade);
-        ";
+            // --- ETAPA 2: Adicionar a coluna 'IsLastFinished' se ela não existir ---
+            try
+            {
+                var alterCommand = connection.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN IsLastFinished INTEGER DEFAULT 0";
+                alterCommand.ExecuteNonQuery();
+            }
+            catch (SqliteException ex)
+            {
+                if (!ex.Message.Contains("duplicate column name"))
+                {
+                    throw; // Lança outros erros
+                }
+                // Se a coluna já existe, ignora o erro e continua.
+            }
 
-            command.Parameters.AddWithValue("$name", model.Name);
-            command.Parameters.AddWithValue("$year", model.Year);
-            command.Parameters.AddWithValue("$finished", model.FinishedInThisYear);
-            command.Parameters.AddWithValue("$grade", model.Grade);
+            // --- ETAPA 3: Iniciar a transação para o UPDATE e INSERT ---
+            var transaction = connection.BeginTransaction();
+            try
+            {
+                // LÓGICA DE RESET
+                if (model.IsLastFinished)
+                {
+                    var resetCommand = connection.CreateCommand();
+                    resetCommand.Transaction = transaction;
+                    resetCommand.CommandText = "UPDATE Games SET IsLastFinished = 0 WHERE IsLastFinished = 1";
+                    resetCommand.ExecuteNonQuery();
+                }
 
-            command.ExecuteNonQuery();
+                // COMANDO DE INSERÇÃO ATUALIZADO
+                var command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = @"
+                    INSERT INTO Games (Name, Year, FinishedInThisYear, Grade, IsLastFinished)
+                    VALUES ($name, $year, $finished, $grade, $islastfinished);
+                    ";
+
+                command.Parameters.AddWithValue("$name", model.Name);
+                command.Parameters.AddWithValue("$year", model.Year);
+                command.Parameters.AddWithValue("$finished", model.FinishedInThisYear);
+                command.Parameters.AddWithValue("$grade", model.Grade);
+                command.Parameters.AddWithValue("$islastfinished", model.IsLastFinished); // Novo campo
+
+                command.ExecuteNonQuery();
+                transaction.Commit();
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+                throw;
+            }
 
             ViewBag.Mensagem = "Jogo salvo com sucesso!";
             return View("Index");
@@ -95,40 +172,50 @@ namespace catalogo_jogos.Controllers
         {
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
+            var transaction = connection.BeginTransaction();
 
-            var command = connection.CreateCommand();
-            command.CommandText = @"
-                UPDATE Games
-                SET Name = $name, Year = $year, FinishedInThisYear = $finishedinthisyear, Grade = $grade
-                WHERE Id = $id";
+            try
+            {
+                // LÓGICA DE RESET (Igual ao SaveGame)
+                if (model.IsLastFinished)
+                {
+                    var resetCommand = connection.CreateCommand();
+                    resetCommand.Transaction = transaction;
+                    resetCommand.CommandText = "UPDATE Games SET IsLastFinished = 0 WHERE IsLastFinished = 1";
+                    resetCommand.ExecuteNonQuery();
+                }
 
-            command.Parameters.AddWithValue("$id", model.Id);
-            command.Parameters.AddWithValue("$name", model.Name);
-            command.Parameters.AddWithValue("$year", model.Year);
-            command.Parameters.AddWithValue("$finishedinthisyear", model.FinishedInThisYear);
-            command.Parameters.AddWithValue("$grade", model.Grade);
-            command.ExecuteNonQuery();
+                var command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = @"
+                    UPDATE Games
+                    SET Name = $name, 
+                        Year = $year, 
+                        FinishedInThisYear = $finished, 
+                        Grade = $grade,
+                        IsLastFinished = $islastfinished 
+                    WHERE Id = $id";
+
+                command.Parameters.AddWithValue("$id", model.Id);
+                command.Parameters.AddWithValue("$name", model.Name);
+                command.Parameters.AddWithValue("$year", model.Year);
+                command.Parameters.AddWithValue("$finished", model.FinishedInThisYear);
+                command.Parameters.AddWithValue("$grade", model.Grade);
+                command.Parameters.AddWithValue("$islastfinished", model.IsLastFinished); // Adicionado
+
+                command.ExecuteNonQuery();
+                transaction.Commit();
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+                throw;
+            }
 
             TempData["Mensagem"] = "Jogo atualizado com sucesso!";
             return RedirectToAction("ListaJogos");
         }
 
-        //Ação do botão de excluir
-        [HttpPost]
-        public IActionResult ExcluirJogo(int id)
-        {
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
-
-            var command = connection.CreateCommand();
-            command.CommandText = "DELETE FROM Games WHERE Id = $id";
-            command.Parameters.AddWithValue("$id", id);
-            command.ExecuteNonQuery();
-
-            // Mensagem de sucesso (igual você faz na atualização)
-            TempData["Mensagem"] = "Jogo excluído com sucesso!";
-            return RedirectToAction("ListaJogos");
-        }
 
         //Filtragem universal E Ordenação (Com CTE para corrigir o EverCompleted)
         public IActionResult ListaJogos(string termoBusca, string sortOrder)
@@ -216,7 +303,6 @@ namespace catalogo_jogos.Controllers
 
         public IActionResult Estatisticas()
         {
-            // 1. Inicializar o ViewModel com valores padrão
             var viewModel = new EstatisticasViewModel
             {
                 LastGameFinished = "Nenhum jogo zerado registrado",
@@ -224,20 +310,18 @@ namespace catalogo_jogos.Controllers
                 MostPlayedGame = "N/A"
             };
 
-            // Usar a connection string que você já tem no topo do arquivo
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
             // ---
-            // 2. QUERY 1: ÚLTIMO JOGO ZERADO
-            // (Assumindo que FinishedInThisYear é 1 para 'true' e 0 para 'false')
+            // 2. QUERY 1: ÚLTIMO JOGO ZERADO (LOGICA ATUALIZADA)
+            // Busca o único jogo marcado com IsLastFinished = 1
             // ---
             var cmdLastGame = connection.CreateCommand();
             cmdLastGame.CommandText = @"
                 SELECT Name, Year 
                 FROM Games 
-                WHERE FinishedInThisYear = 1 
-                ORDER BY Year DESC 
+                WHERE IsLastFinished = 1 
                 LIMIT 1";
 
             using (var reader = cmdLastGame.ExecuteReader())
@@ -246,10 +330,10 @@ namespace catalogo_jogos.Controllers
                 {
                     viewModel.LastGameFinished = $"{reader.GetString(0)} (em {reader.GetInt32(1)})";
                 }
-            } // Primeiro reader é fechado aqui
+            }
 
             // ---
-            // 3. QUERY 2: JOGO ZERADO MAIS VEZES
+            // 3. QUERY 2: JOGO ZERADO MAIS VEZES (Sem alteração)
             // ---
             var cmdMostFinished = connection.CreateCommand();
             cmdMostFinished.CommandText = @"
@@ -266,10 +350,10 @@ namespace catalogo_jogos.Controllers
                 {
                     viewModel.MostFinishedGame = $"{reader.GetString(0)} ({reader.GetInt32(1)} vezes)";
                 }
-            } // Segundo reader é fechado aqui
+            }
 
             // ---
-            // 4. QUERY 3: JOGO JOGADO (REGISTRADO) MAIS VEZES
+            // 4. QUERY 3: JOGO JOGADO (REGISTRADO) MAIS VEZES (Sem alteração)
             // ---
             var cmdMostPlayed = connection.CreateCommand();
             cmdMostPlayed.CommandText = @"
@@ -285,9 +369,8 @@ namespace catalogo_jogos.Controllers
                 {
                     viewModel.MostPlayedGame = $"{reader.GetString(0)} ({reader.GetInt32(1)} registros)";
                 }
-            } // Terceiro reader é fechado aqui
+            }
 
-            // 5. Enviar o ViewModel preenchido para a View
             return View(viewModel);
         }
 
