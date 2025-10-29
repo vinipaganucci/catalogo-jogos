@@ -257,27 +257,52 @@ namespace catalogo_jogos.Controllers
 
 
         //Filtragem universal E Ordenação (Com CTE para corrigir o EverCompleted)
-        public IActionResult ListaJogos(string termoBusca, string sortOrder)
+        //Filtragem universal E Ordenação (Atualizado para filtro de ano)
+        public IActionResult ListaJogos(string termoBusca, string sortOrder, int? filtroAno)
         {
             var listaJogos = new List<Jogo>();
 
-            // Garante que a coluna Ordem exista
-            using var connectionCheck = new SqliteConnection(_connectionString);
-            connectionCheck.Open();
-            try
+            // --- ETAPA 1: Buscar todos os anos únicos para os botões ---
+            var distinctYears = new List<int>();
+            using (var connectionYears = new SqliteConnection(_connectionString))
             {
-                var alterCommand = connectionCheck.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Ordem INTEGER DEFAULT 0";
-                alterCommand.ExecuteNonQuery();
+                connectionYears.Open();
+                var yearsCommand = connectionYears.CreateCommand();
+                // Busca os anos, do mais novo para o mais antigo
+                yearsCommand.CommandText = "SELECT DISTINCT Year FROM Games ORDER BY Year DESC";
+                using (var yearsReader = yearsCommand.ExecuteReader())
+                {
+                    while(yearsReader.Read())
+                    {
+                        distinctYears.Add(yearsReader.GetInt32(0));
+                    }
+                }
             }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            connectionCheck.Close();
+            // Envia a lista de anos para a View
+            ViewData["DistinctYears"] = distinctYears;
 
 
+            // --- ETAPA 2: Garantir que a coluna Ordem exista ---
+            // (Essa lógica de segurança que já tínhamos)
+            using (var connectionCheck = new SqliteConnection(_connectionString))
+            {
+                connectionCheck.Open();
+                try
+                {
+                    var alterCommand = connectionCheck.CreateCommand();
+                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Ordem INTEGER DEFAULT 0";
+                    alterCommand.ExecuteNonQuery();
+                }
+                catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
+            }
+
+
+            // --- ETAPA 3: Montar a Query Principal ---
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
             var command = connection.CreateCommand();
+            var whereClauses = new List<string>();
 
             // 1. Iniciar a query base com o CTE
             string sql = @"
@@ -287,53 +312,67 @@ namespace catalogo_jogos.Controllers
                     FROM Games
                 )
                 SELECT Id, Name, Year, FinishedInThisYear, Grade, EverCompleted, Ordem
-                FROM AllGamesWithCompletion"; // Agora selecionamos da CTE
+                FROM AllGamesWithCompletion";
 
-            // 2. Adicionar o filtro (WHERE)
+            // 2. Adicionar o filtro de BUSCA (termoBusca)
             if (!string.IsNullOrEmpty(termoBusca))
             {
-                // ... (lógica do where... "Ordem" não é pesquisável aqui, o que é bom)
-                var whereClauses = new List<string>
+                var searchClauses = new List<string>
                 {
                     "Name LIKE $termoBusca",
                     "CAST(Year AS TEXT) LIKE $termoBusca",
                     "Grade LIKE $termoBusca"
                 };
-
                 command.Parameters.AddWithValue("$termoBusca", $"%{termoBusca}%");
 
                 string termoLimpo = termoBusca.Trim();
                 if (termoLimpo.Equals("sim", StringComparison.OrdinalIgnoreCase))
                 {
-                    whereClauses.Add("FinishedInThisYear = 1");
+                    searchClauses.Add("FinishedInThisYear = 1");
                 }
                 else if (termoLimpo.Equals("não", StringComparison.OrdinalIgnoreCase) ||
                          termoLimpo.Equals("nao", StringComparison.OrdinalIgnoreCase))
                 {
-                    whereClauses.Add("FinishedInThisYear = 0");
+                    searchClauses.Add("FinishedInThisYear = 0");
                 }
 
-                sql += $" WHERE {string.Join(" OR ", whereClauses)}";
-                ViewData["CurrentFilter"] = termoBusca;
+                whereClauses.Add($"({string.Join(" OR ", searchClauses)})");
             }
 
-            // 3. Adicionar a ordenação (ORDER BY) - CORREÇÃO APLICADA
+            // 3. Adicionar o filtro de ANO (filtroAno)
+            if (filtroAno.HasValue)
+            {
+                whereClauses.Add("Year = $filtroAno");
+                command.Parameters.AddWithValue("$filtroAno", filtroAno.Value);
+            }
+
+            // 4. Juntar todos os filtros com "AND"
+            if (whereClauses.Count > 0)
+            {
+                sql += $" WHERE {string.Join(" AND ", whereClauses)}";
+            }
+
+            // 5. Adicionar a ordenação
+            // (O padrão já é 'Year, Ordem', como definimos)
             switch (sortOrder)
             {
-                case "year":
-                    sql += " ORDER BY Year, Ordem"; // Ordena por Ano, depois pela Ordem manual
-                    break;
                 case "name":
                     sql += " ORDER BY Name";
                     break;
-                default: // <-- Junta o 'year' e o 'default'
+                case "year":
+                default:
                     sql += " ORDER BY Year, Ordem";
                     break;
             }
 
             command.CommandText = sql;
 
-            // 4. Executar a query
+            // 6. Passar os filtros atuais de volta para a View
+            ViewData["CurrentFilter"] = termoBusca;
+            ViewData["CurrentYearFilter"] = filtroAno;
+            ViewData["CurrentSortOrder"] = sortOrder;
+
+            // 7. Executar a query
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -345,7 +384,7 @@ namespace catalogo_jogos.Controllers
                     FinishedInThisYear = reader.GetBoolean(3),
                     Grade = reader.GetString(4),
                     EverCompleted = reader.GetBoolean(5),
-                    Ordem = reader.GetInt32(6) // Lendo o novo campo
+                    Ordem = reader.GetInt32(6)
                 });
             }
 
