@@ -104,8 +104,7 @@ namespace catalogo_jogos.Controllers
             return RedirectToAction("ListaJogos");
         }
 
-        //Filtragem universal (Nome, Ano, Nota)
-        //Filtragem universal E Ordenação
+        //Filtragem universal E Ordenação (Com lógica booleana)
         public IActionResult ListaJogos(string termoBusca, string sortOrder)
         {
             var listaJogos = new List<Jogo>();
@@ -121,12 +120,37 @@ namespace catalogo_jogos.Controllers
             // 2. Adicionar o filtro (WHERE), se existir
             if (!string.IsNullOrEmpty(termoBusca))
             {
-                sql += @" 
-                    WHERE Name LIKE $termoBusca 
-                       OR CAST(Year AS TEXT) LIKE $termoBusca
-                       OR Grade LIKE $termoBusca";
+                // Lista dinâmica de condições
+                var whereClauses = new List<string>
+                {
+                    "Name LIKE $termoBusca",
+                    "CAST(Year AS TEXT) LIKE $termoBusca",
+                    "Grade LIKE $termoBusca"
+                };
 
+                // Adiciona o parâmetro LIKE padrão
                 command.Parameters.AddWithValue("$termoBusca", $"%{termoBusca}%");
+
+                // --- INÍCIO DA NOVA LÓGICA ---
+                string termoLimpo = termoBusca.Trim();
+
+                // Verifica se a busca corresponde a "sim"
+                if (termoLimpo.Equals("sim", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Adiciona a condição booleana
+                    whereClauses.Add("FinishedInThisYear = 1");
+                }
+                // Verifica se a busca corresponde a "não" (com e sem acento)
+                else if (termoLimpo.Equals("não", StringComparison.OrdinalIgnoreCase) ||
+                         termoLimpo.Equals("nao", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Adiciona a condição booleana
+                    whereClauses.Add("FinishedInThisYear = 0");
+                }
+                // --- FIM DA NOVA LÓGICA ---
+
+                // Junta todas as condições com "OR"
+                sql += $" WHERE {string.Join(" OR ", whereClauses)}";
 
                 // Salva o filtro atual para ser usado pelos botões na View
                 ViewData["CurrentFilter"] = termoBusca;
@@ -142,7 +166,10 @@ namespace catalogo_jogos.Controllers
                     sql += " ORDER BY Name"; // Ordena por nome (A-Z)
                     break;
                 default:
-                    sql += " ORDER BY Name"; // Padrão: Ordem alfabética se nada for escolhido
+                    // Se não houver filtro, ordena por nome. Se houver filtro, 
+                    // a ordem de relevância do LIKE é mantida (opcional, mas comum).
+                    // Vamos manter o padrão de ordenar por nome.
+                    sql += " ORDER BY Name";
                     break;
             }
 
