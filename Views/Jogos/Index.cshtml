@@ -106,18 +106,13 @@
             yearSelect.addEventListener('change', toggleLastFinishedCheckbox);
 
 
-            // --- NOVA LÓGICA ---
-            // Adiciona um 'ouvinte' ao checkbox "Último que zerei"
+            // --- LÓGICA DOS CHECKBOXES ---
             lastFinishedCheck.addEventListener('change', function() {
-                // Se ele for marcado (checked = true)
                 if (lastFinishedCheck.checked) {
-                    // Marca o checkbox "Zerado nesse ano"
                     finishedCheck.checked = true;
                 }
             });
 
-            // Lógica opcional: se o usuário desmarcar "Zerado esse ano",
-            // também desmarca o "Último que zerei"
             finishedCheck.addEventListener('change', function() {
                 if (!finishedCheck.checked) {
                     lastFinishedCheck.checked = false;

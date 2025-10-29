@@ -7,9 +7,8 @@
         public int Year { get; set; }
         public bool FinishedInThisYear { get; set; }
         public string Grade { get; set; }
-
         public bool EverCompleted { get; set; }
-
         public bool IsLastFinished { get; set; }
+        public int Ordem { get; set; }
     }
 }

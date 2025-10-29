@@ -22,7 +22,7 @@ namespace catalogo_jogos.Controllers
         //Tela de edição dos jogos
         public IActionResult TelaEdicao(int id)
         {
-            // Garante que a coluna existe (igual ao SaveGame)
+            // Garante que as colunas existem (igual ao SaveGame)
             using var connectionCheck = new SqliteConnection(_connectionString);
             connectionCheck.Open();
             try
@@ -31,10 +31,15 @@ namespace catalogo_jogos.Controllers
                 alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN IsLastFinished INTEGER DEFAULT 0";
                 alterCommand.ExecuteNonQuery();
             }
-            catch (SqliteException ex)
+            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
+
+            try
             {
-                if (!ex.Message.Contains("duplicate column name")) throw;
+                var alterCommand = connectionCheck.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Ordem INTEGER DEFAULT 0";
+                alterCommand.ExecuteNonQuery();
             }
+            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
             connectionCheck.Close();
 
 
@@ -42,12 +47,14 @@ namespace catalogo_jogos.Controllers
             connection.Open();
 
             var command = connection.CreateCommand();
+            // ADICIONA 'Ordem' AO SELECT
             command.CommandText = @"
             SELECT Id, Name, Year, FinishedInThisYear, Grade,
                    (SELECT MAX(g2.FinishedInThisYear) 
                     FROM Games g2 
                     WHERE g2.Name = Games.Name) AS EverCompleted,
-                   IsLastFinished
+                   IsLastFinished,
+                   Ordem
             FROM Games
             WHERE Id = $id";
 
@@ -64,7 +71,8 @@ namespace catalogo_jogos.Controllers
                     FinishedInThisYear = reader.GetBoolean(3),
                     Grade = reader.GetString(4),
                     EverCompleted = reader.GetBoolean(5),
-                    IsLastFinished = reader.GetBoolean(6) // Lendo o novo campo
+                    IsLastFinished = reader.GetBoolean(6),
+                    Ordem = reader.GetInt32(7) // Lendo o novo campo
                 };
                 return View(jogo);
             }
@@ -97,7 +105,9 @@ namespace catalogo_jogos.Controllers
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
-            // --- ETAPA 1: Garantir que a tabela e a coluna existem ---
+            // --- ETAPA 1 e 2 (Garantir colunas) ---
+            // (O código daqui para baixo está idêntico ao anterior,
+            // garantindo que as colunas 'IsLastFinished' e 'Ordem' existam)
             var createCommand = connection.CreateCommand();
             createCommand.CommandText = @"
                 CREATE TABLE IF NOT EXISTS Games (
@@ -106,11 +116,11 @@ namespace catalogo_jogos.Controllers
                     Year INTEGER,
                     FinishedInThisYear INTEGER,
                     Grade TEXT,
-                    IsLastFinished INTEGER DEFAULT 0 
+                    IsLastFinished INTEGER DEFAULT 0,
+                    Ordem INTEGER DEFAULT 0 
                 );";
             createCommand.ExecuteNonQuery();
 
-            // --- ETAPA 2: Adicionar a coluna 'IsLastFinished' se ela não existir ---
             try
             {
                 var alterCommand = connection.CreateCommand();
@@ -119,18 +129,25 @@ namespace catalogo_jogos.Controllers
             }
             catch (SqliteException ex)
             {
-                if (!ex.Message.Contains("duplicate column name"))
-                {
-                    throw; // Lança outros erros
-                }
-                // Se a coluna já existe, ignora o erro e continua.
+                if (!ex.Message.Contains("duplicate column name")) throw;
             }
 
-            // --- ETAPA 3: Iniciar a transação para o UPDATE e INSERT ---
+            try
+            {
+                var alterCommand = connection.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Ordem INTEGER DEFAULT 0";
+                alterCommand.ExecuteNonQuery();
+            }
+            catch (SqliteException ex)
+            {
+                if (!ex.Message.Contains("duplicate column name")) throw;
+            }
+
+            // --- ETAPA 3: Iniciar a transação ---
             var transaction = connection.BeginTransaction();
             try
             {
-                // LÓGICA DE RESET
+                // LÓGICA DE RESET (IsLastFinished)
                 if (model.IsLastFinished)
                 {
                     var resetCommand = connection.CreateCommand();
@@ -139,7 +156,7 @@ namespace catalogo_jogos.Controllers
                     resetCommand.ExecuteNonQuery();
                 }
 
-                // COMANDO DE INSERÇÃO ATUALIZADO
+                // COMANDO DE INSERÇÃO
                 var command = connection.CreateCommand();
                 command.Transaction = transaction;
                 command.CommandText = @"
@@ -151,9 +168,28 @@ namespace catalogo_jogos.Controllers
                 command.Parameters.AddWithValue("$year", model.Year);
                 command.Parameters.AddWithValue("$finished", model.FinishedInThisYear);
                 command.Parameters.AddWithValue("$grade", model.Grade);
-                command.Parameters.AddWithValue("$islastfinished", model.IsLastFinished); // Novo campo
+                command.Parameters.AddWithValue("$islastfinished", model.IsLastFinished);
 
                 command.ExecuteNonQuery();
+
+                // --- ETAPA 4: DEFINIR A ORDEM PADRÃO (CORRIGIDO) ---
+
+                // 1. Comando para buscar o último ID inserido
+                var getLastIdCommand = connection.CreateCommand();
+                getLastIdCommand.Transaction = transaction;
+                getLastIdCommand.CommandText = "SELECT last_insert_rowid()";
+
+                // 2. Usamos ExecuteScalar() para pegar o valor (o ID)
+                long lastId = (long)getLastIdCommand.ExecuteScalar();
+
+                // 3. Cria um novo comando para definir a Ordem = Id
+                var updateOrdemCommand = connection.CreateCommand();
+                updateOrdemCommand.Transaction = transaction;
+                updateOrdemCommand.CommandText = "UPDATE Games SET Ordem = $id WHERE Id = $id";
+                updateOrdemCommand.Parameters.AddWithValue("$id", lastId);
+                updateOrdemCommand.ExecuteNonQuery();
+
+
                 transaction.Commit();
             }
             catch (Exception)
@@ -176,7 +212,7 @@ namespace catalogo_jogos.Controllers
 
             try
             {
-                // LÓGICA DE RESET (Igual ao SaveGame)
+                // LÓGICA DE RESET (IsLastFinished)
                 if (model.IsLastFinished)
                 {
                     var resetCommand = connection.CreateCommand();
@@ -187,13 +223,15 @@ namespace catalogo_jogos.Controllers
 
                 var command = connection.CreateCommand();
                 command.Transaction = transaction;
+                // ADICIONA 'Ordem' AO UPDATE
                 command.CommandText = @"
                     UPDATE Games
                     SET Name = $name, 
                         Year = $year, 
                         FinishedInThisYear = $finished, 
                         Grade = $grade,
-                        IsLastFinished = $islastfinished 
+                        IsLastFinished = $islastfinished,
+                        Ordem = $ordem 
                     WHERE Id = $id";
 
                 command.Parameters.AddWithValue("$id", model.Id);
@@ -201,7 +239,8 @@ namespace catalogo_jogos.Controllers
                 command.Parameters.AddWithValue("$year", model.Year);
                 command.Parameters.AddWithValue("$finished", model.FinishedInThisYear);
                 command.Parameters.AddWithValue("$grade", model.Grade);
-                command.Parameters.AddWithValue("$islastfinished", model.IsLastFinished); // Adicionado
+                command.Parameters.AddWithValue("$islastfinished", model.IsLastFinished);
+                command.Parameters.AddWithValue("$ordem", model.Ordem); // Adicionado
 
                 command.ExecuteNonQuery();
                 transaction.Commit();
@@ -222,26 +261,38 @@ namespace catalogo_jogos.Controllers
         {
             var listaJogos = new List<Jogo>();
 
+            // Garante que a coluna Ordem exista
+            using var connectionCheck = new SqliteConnection(_connectionString);
+            connectionCheck.Open();
+            try
+            {
+                var alterCommand = connectionCheck.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Ordem INTEGER DEFAULT 0";
+                alterCommand.ExecuteNonQuery();
+            }
+            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
+            connectionCheck.Close();
+
+
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
             var command = connection.CreateCommand();
 
-            // 1. Iniciar a query base com o CTE (Common Table Expression)
-            // Isso força o cálculo do EverCompleted ANTES do filtro WHERE
+            // 1. Iniciar a query base com o CTE
             string sql = @"
                 WITH AllGamesWithCompletion AS (
-                    SELECT Id, Name, Year, FinishedInThisYear, Grade,
+                    SELECT Id, Name, Year, FinishedInThisYear, Grade, Ordem,
                            MAX(FinishedInThisYear) OVER (PARTITION BY Name) AS EverCompleted
                     FROM Games
                 )
-                SELECT Id, Name, Year, FinishedInThisYear, Grade, EverCompleted
+                SELECT Id, Name, Year, FinishedInThisYear, Grade, EverCompleted, Ordem
                 FROM AllGamesWithCompletion"; // Agora selecionamos da CTE
 
-            // 2. Adicionar o filtro (WHERE), se existir
-            // Esta lógica será aplicada APÓS o cálculo do EverCompleted
+            // 2. Adicionar o filtro (WHERE)
             if (!string.IsNullOrEmpty(termoBusca))
             {
+                // ... (lógica do where... "Ordem" não é pesquisável aqui, o que é bom)
                 var whereClauses = new List<string>
                 {
                     "Name LIKE $termoBusca",
@@ -266,24 +317,23 @@ namespace catalogo_jogos.Controllers
                 ViewData["CurrentFilter"] = termoBusca;
             }
 
-            // 3. Adicionar a ordenação (ORDER BY)
+            // 3. Adicionar a ordenação (ORDER BY) - CORREÇÃO APLICADA
             switch (sortOrder)
             {
                 case "year":
-                    sql += " ORDER BY Year, Id";
+                    sql += " ORDER BY Year, Ordem"; // Ordena por Ano, depois pela Ordem manual
                     break;
                 case "name":
                     sql += " ORDER BY Name";
                     break;
-                default:
-                    sql += " ORDER BY Name";
+                default: // <-- Junta o 'year' e o 'default'
+                    sql += " ORDER BY Year, Ordem";
                     break;
             }
 
             command.CommandText = sql;
 
             // 4. Executar a query
-            // A ordem das colunas (índices 0 a 5) permanece a mesma
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -294,7 +344,8 @@ namespace catalogo_jogos.Controllers
                     Year = reader.GetInt32(2),
                     FinishedInThisYear = reader.GetBoolean(3),
                     Grade = reader.GetString(4),
-                    EverCompleted = reader.GetBoolean(5)
+                    EverCompleted = reader.GetBoolean(5),
+                    Ordem = reader.GetInt32(6) // Lendo o novo campo
                 });
             }
 
