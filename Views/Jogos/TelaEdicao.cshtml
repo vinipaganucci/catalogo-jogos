@@ -1,0 +1,63 @@
+﻿@model catalogo_jogos.Models.Jogo
+@{
+    ViewData["Title"] = "Editar";
+}
+
+<div class="container mt-5" style="max-width: 500px;">
+    <h3 class="mb-4 text-center">Editar</h3>
+
+    <form asp-action="AtualizarObjetoJogo" method="post">
+        <input type="hidden" asp-for="Id" />
+        <div class="mb-3 row">
+            <label class="col-sm-5 col-form-label">Título:</label>
+            <div class="col-sm-7">
+                <input type="text" class="form-control" placeholder="Ex: Resident Evil" asp-for="Name" />
+            </div>
+        </div>
+
+        <div class="mb-3 row">
+            <label class="col-sm-5 col-form-label">Ano Que Foi Jogado:</label>
+            <div class="col-sm-7">
+                <input type="number" class="form-control" placeholder="Ex: 2025" min="1900" max="2025" asp-for="Year" />
+            </div>
+        </div>
+
+        <div class="mb-3 row">
+            <label class="col-sm-5 col-form-label">Zerado Nesse Ano?:</label>
+            <div class="col-sm-7">
+                <select class="form-control" asp-for="FinishedInThisYear">
+                    <option value="true">Sim</option>
+                    <option value="false">Não</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mb-4 row">
+            <label class="col-sm-5 col-form-label">Nota:</label>
+            <div class="col-sm-7">
+                <select class="form-control" asp-for="Grade">
+                    <option selected disabled value="">Selecione uma nota</option>
+                    <option value="Obra-Prima">Obra-Prima</option>
+                    <option value="Excelente">Excelente</option>
+                    <option value="Muito Bom">Muito Bom</option>
+                    <option value="Bom">Bom</option>
+                    <option value="Mediano">Mediano</option>
+                    <option value="Ruim">Ruim</option>
+                    <option value="Péssimo">Péssimo</option>
+                    <option value="Lixo Podre">Lixo Podre</option>
+                </select>
+            </div>
+        </div>
+
+
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a asp-action="ListaJogos" class="btn btn-secondary">Cancelar</a>
+        </div>
+
+        @if (ViewBag.Mensagem != null)
+        {
+            <div class="alert alert-success mt-3">@ViewBag.Mensagem</div>
+        }
+    </form>
+</div>

@@ -1,0 +1,58 @@
+﻿@model List<catalogo_jogos.Models.Jogo>
+
+@{
+    ViewData["Title"] = "Registros Salvos";
+}
+
+
+
+<div class="container mt-5">
+    <h3 class="mb-4 text-center">@ViewData["Title"]</h3>
+
+
+    @if (Model.Count == 0)
+    {
+        <div class="alert alert-warning text-center">Nenhum registro encontrado.</div>
+    }
+    else
+    {
+        @if (TempData["Mensagem"] != null)
+        {
+            <div class="alert alert-success text-center">
+                @TempData["Mensagem"]
+            </div>
+        }
+        <table class="table table-bordered table-striped">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Ano Que Foi Finalizado</th>
+                    <th>Finalizado Esse Ano?</th>
+                    <th>Nota</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td>@r.Id</td>
+                        <td>@r.Name</td>
+                        <td>@r.Year</td>
+                        <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.FinishedInThisYear)</td>
+                        <td>@r.Grade</td>
+                        <td>
+                            <a asp-action="TelaEdicao" asp-route-id="@r.Id" class="btn btn-warning btn-sm">Editar</a>
+                            <a asp-action="Detalhar" asp-route-id="@r.Id" class="btn btn-info btn-sm">Detalhes</a>
+                        </td>                       
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <div class="text-center mt-3">
+        <a asp-action="Index" class="btn btn-secondary">Voltar</a>
+    </div>
+</div>
