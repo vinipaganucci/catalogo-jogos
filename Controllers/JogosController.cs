@@ -18,12 +18,7 @@ namespace catalogo_jogos.Controllers
         }
 
         
-        //Tela de listagem de jogos
-        public IActionResult ListaJogos()
-        {
-            Listar();
-            return View();
-        }
+        
 
         //Tela de edição dos jogos
         public IActionResult TelaEdicao(int id)
@@ -85,33 +80,6 @@ namespace catalogo_jogos.Controllers
             return View("Index");
         }
 
-        //Tela de listagem dos objetos "Jogos"
-        public IActionResult Listar()
-        {
-            var listaJogos = new List<Jogo>();
-
-            using var connection = new SqliteConnection(_connectionString);
-            connection.Open();
-
-            var command = connection.CreateCommand();
-            command.CommandText = "SELECT Id, Name, Year, FinishedInThisYear, Grade FROM Games"; //  Adicionado Fila
-
-            using var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                listaJogos.Add(new Jogo
-                {
-                    Id = reader.GetInt32(0),
-                    Name = reader.GetString(1),
-                    Year = reader.GetInt32(2),
-                    FinishedInThisYear = reader.GetBoolean(3),
-                    Grade = reader.GetString(4),                    
-                });
-            }
-
-            return View(listaJogos);
-        }
-
         //Ação do botão de editar
         [HttpPost]
         public IActionResult AtualizarObjetoJogo(Jogo model)
@@ -136,6 +104,40 @@ namespace catalogo_jogos.Controllers
             return RedirectToAction("ListaJogos");
         }
 
+        //Lista os jogos com possibilidade de filtro
+        public IActionResult ListaJogos(int? ano)
+        {
+            var listaJogos = new List<Jogo>();
+
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var command = connection.CreateCommand();
+            if (ano.HasValue)
+            {
+                command.CommandText = "SELECT Id, Name, Year, FinishedInThisYear, Grade FROM Games WHERE Year = $ano";
+                command.Parameters.AddWithValue("$ano", ano.Value);
+            }
+            else
+            {
+                command.CommandText = "SELECT Id, Name, Year, FinishedInThisYear, Grade FROM Games";
+            }
+
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                listaJogos.Add(new Jogo
+                {
+                    Id = reader.GetInt32(0),
+                    Name = reader.GetString(1),
+                    Year = reader.GetInt32(2),
+                    FinishedInThisYear = reader.GetBoolean(3),
+                    Grade = reader.GetString(4)
+                });
+            }
+
+            return View(listaJogos);
+        }
 
 
     }

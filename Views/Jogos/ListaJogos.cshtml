@@ -9,6 +9,16 @@
 <div class="container mt-5">
     <h3 class="mb-4 text-center">@ViewData["Title"]</h3>
 
+    <form method="get" asp-action="ListaJogos" class="mb-3 d-flex align-items-center">
+        <label class="me-2">Ano:</label>
+
+        <input type="number" name="ano" min="1900" max="2025" class="form-control me-2" style="width: 100px;" />
+
+        <button type="submit" class="btn btn-primary me-2">Filtrar</button>
+
+        <a asp-action="ListaJogos" class="btn btn-outline-secondary">Resetar</a>
+    </form>
+
 
     @if (Model.Count == 0)
     {
