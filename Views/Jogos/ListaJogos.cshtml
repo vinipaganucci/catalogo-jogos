@@ -1,5 +1,6 @@
 ﻿@model List<catalogo_jogos.Models.Jogo>
 @inject System.Text.Encodings.Web.JavaScriptEncoder jsEncoder
+
 @{
     ViewData["Title"] = "Registros Salvos";
 
@@ -24,9 +25,16 @@
                    placeholder="Nome, ano ou nota..."
                    value="@currentFilter" />
             <button type="submit" class="btn btn-primary me-2">Buscar</button>
-            <a asp-controller="Jogos" asp-action="Estatisticas" class="btn btn-primary me-2">
+
+            <a asp-controller="Jogos" asp-action="Estatisticas"
+               asp-route-termoBusca="@currentFilter"
+               asp-route-filtroAno="@currentYearFilter"
+               asp-route-sortOrder="@currentSortOrder"
+               asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
+               class="btn btn-primary me-2">
                 Ver Estatísticas
             </a>
+
             <a asp-action="ListaJogos" class="btn btn-outline-secondary me-2">Resetar</a>
         </form>
 
@@ -48,14 +56,17 @@
             Ordem Alfabética (A-Z)
         </a>
     </div>
+
     <div class="mb-3">
         <strong>Filtrar por Ano:</strong>
         @foreach (var year in distinctYears)
         {
             var btnClass = (year == currentYearFilter) ? "btn-primary" : "btn-light border";
+            // LÓGICA DE TOGGLE: Se o ano clicado for o ativo, passa 'null' para desmarcar
+            var filtroAnoParaEsteBotao = (year == currentYearFilter) ? (int?)null : year;
 
             <a asp-action="ListaJogos"
-               asp-route-filtroAno="@year"
+               asp-route-filtroAno="@filtroAnoParaEsteBotao"
                asp-route-termoBusca="@currentFilter"
                asp-route-sortOrder="@currentSortOrder"
                asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
@@ -64,13 +75,16 @@
             </a>
         }
     </div>
+
     <div class="mb-3">
         <strong>Outros Filtros:</strong>
         @{
             var btnClassNuncaZerados = (currentNaoZeradosFilter == true) ? "btn-primary" : "btn-light border";
+            // LÓGICA DE TOGGLE: Se já estiver ativo, passa 'null' para desmarcar
+            var filtroNaoZeradosParaEsteBotao = (currentNaoZeradosFilter == true) ? (bool?)null : true;
         }
         <a asp-action="ListaJogos"
-           asp-route-filtroNaoZerados="true"
+           asp-route-filtroNaoZerados="@filtroNaoZeradosParaEsteBotao"
            asp-route-filtroAno="@currentYearFilter"
            asp-route-termoBusca="@currentFilter"
            asp-route-sortOrder="@currentSortOrder"
@@ -128,14 +142,24 @@
 
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a asp-action="TelaEdicao" asp-route-id="@r.Id" class="btn btn-warning btn-sm">Editar</a>
+                                    <a asp-action="TelaEdicao" asp-route-id="@r.Id"
+                                       asp-route-termoBusca="@currentFilter"
+                                       asp-route-filtroAno="@currentYearFilter"
+                                       asp-route-sortOrder="@currentSortOrder"
+                                       asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
+                                       class="btn btn-warning btn-sm">Editar</a>
 
                                     <a href="#" class="btn btn-danger btn-sm"
                                        onclick="excluirJogo(event, @r.Id, '@jsEncoder.Encode(r.Name)')">
                                         Excluir
                                     </a>
 
-                                    <a asp-action="Detalhar" asp-route-id="@r.Id" class="btn btn-info btn-sm">Detalhes</a>
+                                    <a asp-action="Detalhar" asp-route-id="@r.Id"
+                                       asp-route-termoBusca="@currentFilter"
+                                       asp-route-filtroAno="@currentYearFilter"
+                                       asp-route-sortOrder="@currentSortOrder"
+                                       asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
+                                       class="btn btn-info btn-sm">Detalhes</a>
                                 </div>
                             </td>
                         </tr>
@@ -154,20 +178,12 @@
 @section Scripts {
     <script>
         function excluirJogo(event, id, nome) {
-            event.preventDefault(); // Impede o link <a> de navegar
-
+            event.preventDefault();
             if (confirm("Tem certeza que deseja excluir o jogo '" + nome + "'?")) {
-                // 1. Cria um formulário dinâmico na memória
                 var form = document.createElement('form');
                 form.method = 'post';
-
-                // Monta a URL correta para a action ExcluirJogo
                 form.action = '/Jogos/ExcluirJogo/' + id;
-
-                // 2. Adiciona o form ao corpo da página (invisível)
                 document.body.appendChild(form);
-
-                // 3. Envia o formulário
                 form.submit();
             }
         }

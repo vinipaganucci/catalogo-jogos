@@ -2,6 +2,12 @@
 @{
     ViewData["Title"] = "Editar Jogo";
     int currentYear = DateTime.Now.Year;
+
+    // LÊ OS FILTROS QUE A 'LISTAJOGOS' ENVIOU PELA URL
+    var termoBusca = Context.Request.Query["termoBusca"];
+    var sortOrder = Context.Request.Query["sortOrder"];
+    var filtroAno = Context.Request.Query["filtroAno"];
+    var filtroNaoZerados = Context.Request.Query["filtroNaoZerados"];
 }
 
 <div class="container mt-5" style="max-width: 500px;">
@@ -54,6 +60,25 @@
         </div>
 
         <div class="mb-3 row">
+            <label class="col-sm-5 col-form-label" asp-for="CoverUrl">URL da Capa:</label>
+            <div class="col-sm-7">
+                <input type="text" class="form-control" asp-for="CoverUrl" placeholder="http://..." />
+            </div>
+        </div>
+        <div class="mb-3 row">
+            <label class="col-sm-5 col-form-label" asp-for="ScreenshotUrl1">URL Screenshot 1:</label>
+            <div class="col-sm-7">
+                <input type="text" class="form-control" asp-for="ScreenshotUrl1" placeholder="http://..." />
+            </div>
+        </div>
+        <div class="mb-3 row">
+            <label class="col-sm-5 col-form-label" asp-for="ScreenshotUrl2">URL Screenshot 2:</label>
+            <div class="col-sm-7">
+                <input type="text" class="form-control" asp-for="ScreenshotUrl2" placeholder="http://..." />
+            </div>
+        </div>
+
+        <div class="mb-3 row">
             <label class="col-sm-5 col-form-label" asp-for="FinishedInThisYear">Zerado Nesse Ano?:</label>
             <div class="col-sm-7">
                 <div class="form-check pt-2">
@@ -61,7 +86,6 @@
                 </div>
             </div>
         </div>
-
         <div class="mb-3 row" id="lastFinishedContainer" style="display: none;">
             <label class="col-sm-5 col-form-label" asp-for="IsLastFinished">Este foi o último que zerei?</label>
             <div class="col-sm-7">
@@ -73,7 +97,13 @@
 
         <div class="d-grid gap-2">
             <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-            <a asp-action="ListaJogos" class="btn btn-secondary">Cancelar</a>
+
+            <a asp-action="ListaJogos"
+               asp-route-termoBusca="@termoBusca"
+               asp-route-sortOrder="@sortOrder"
+               asp-route-filtroAno="@filtroAno"
+               asp-route-filtroNaoZerados="@filtroNaoZerados"
+               class="btn btn-secondary">Cancelar</a>
         </div>
     </form>
 </div>
@@ -85,11 +115,9 @@
             var lastFinishedContainer = document.getElementById('lastFinishedContainer');
             var currentYear = @currentYear;
 
-            // --- IDs DOS CHECKBOXES ---
             var finishedCheck = document.getElementById('finishedCheckbox');
             var lastFinishedCheck = document.getElementById('lastFinishedCheckbox');
 
-            // Lógica para mostrar/esconder o container
             function toggleLastFinishedCheckbox() {
                 if (parseInt(yearSelect.value) === currentYear) {
                     lastFinishedContainer.style.display = 'flex';
@@ -100,8 +128,6 @@
             toggleLastFinishedCheckbox();
             yearSelect.addEventListener('change', toggleLastFinishedCheckbox);
 
-
-            // --- LÓGICA DOS CHECKBOXES ---
             lastFinishedCheck.addEventListener('change', function() {
                 if (lastFinishedCheck.checked) {
                     finishedCheck.checked = true;

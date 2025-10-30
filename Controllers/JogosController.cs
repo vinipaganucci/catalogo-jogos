@@ -22,7 +22,7 @@ namespace catalogo_jogos.Controllers
         //Tela de edição dos jogos
         public IActionResult TelaEdicao(int id)
         {
-            // Garante que as colunas existem (igual ao SaveGame)
+            // Garante que as colunas existem
             using var connectionCheck = new SqliteConnection(_connectionString);
             connectionCheck.Open();
             try
@@ -32,11 +32,31 @@ namespace catalogo_jogos.Controllers
                 alterCommand.ExecuteNonQuery();
             }
             catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-
             try
             {
                 var alterCommand = connectionCheck.CreateCommand();
                 alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Ordem INTEGER DEFAULT 0";
+                alterCommand.ExecuteNonQuery();
+            }
+            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
+            try
+            {
+                var alterCommand = connectionCheck.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN CoverUrl TEXT DEFAULT ''";
+                alterCommand.ExecuteNonQuery();
+            }
+            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
+            try
+            {
+                var alterCommand = connectionCheck.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN ScreenshotUrl1 TEXT DEFAULT ''";
+                alterCommand.ExecuteNonQuery();
+            }
+            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
+            try
+            {
+                var alterCommand = connectionCheck.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN ScreenshotUrl2 TEXT DEFAULT ''";
                 alterCommand.ExecuteNonQuery();
             }
             catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
@@ -47,14 +67,17 @@ namespace catalogo_jogos.Controllers
             connection.Open();
 
             var command = connection.CreateCommand();
-            // ADICIONA 'Ordem' AO SELECT
+            // ADICIONA AS NOVAS COLUNAS AO SELECT
             command.CommandText = @"
             SELECT Id, Name, Year, FinishedInThisYear, Grade,
                    (SELECT MAX(g2.FinishedInThisYear) 
                     FROM Games g2 
                     WHERE g2.Name = Games.Name) AS EverCompleted,
                    IsLastFinished,
-                   Ordem
+                   Ordem,
+                   CoverUrl,
+                   ScreenshotUrl1,
+                   ScreenshotUrl2
             FROM Games
             WHERE Id = $id";
 
@@ -72,7 +95,11 @@ namespace catalogo_jogos.Controllers
                     Grade = reader.GetString(4),
                     EverCompleted = reader.GetBoolean(5),
                     IsLastFinished = reader.GetBoolean(6),
-                    Ordem = reader.GetInt32(7) // Lendo o novo campo
+                    Ordem = reader.GetInt32(7),
+                    // LENDO AS NOVAS COLUNAS
+                    CoverUrl = reader.GetString(8),
+                    ScreenshotUrl1 = reader.GetString(9),
+                    ScreenshotUrl2 = reader.GetString(10)
                 };
                 return View(jogo);
             }
@@ -106,8 +133,6 @@ namespace catalogo_jogos.Controllers
             connection.Open();
 
             // --- ETAPA 1 e 2 (Garantir colunas) ---
-            // (O código daqui para baixo está idêntico ao anterior,
-            // garantindo que as colunas 'IsLastFinished' e 'Ordem' existam)
             var createCommand = connection.CreateCommand();
             createCommand.CommandText = @"
                 CREATE TABLE IF NOT EXISTS Games (
@@ -117,20 +142,21 @@ namespace catalogo_jogos.Controllers
                     FinishedInThisYear INTEGER,
                     Grade TEXT,
                     IsLastFinished INTEGER DEFAULT 0,
-                    Ordem INTEGER DEFAULT 0 
+                    Ordem INTEGER DEFAULT 0,
+                    CoverUrl TEXT DEFAULT '',
+                    ScreenshotUrl1 TEXT DEFAULT '',
+                    ScreenshotUrl2 TEXT DEFAULT ''
                 );";
             createCommand.ExecuteNonQuery();
 
+            // Checagens 'ALTER TABLE' (incluindo as novas colunas)
             try
             {
                 var alterCommand = connection.CreateCommand();
                 alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN IsLastFinished INTEGER DEFAULT 0";
                 alterCommand.ExecuteNonQuery();
             }
-            catch (SqliteException ex)
-            {
-                if (!ex.Message.Contains("duplicate column name")) throw;
-            }
+            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
 
             try
             {
@@ -138,10 +164,35 @@ namespace catalogo_jogos.Controllers
                 alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Ordem INTEGER DEFAULT 0";
                 alterCommand.ExecuteNonQuery();
             }
-            catch (SqliteException ex)
+            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
+
+            // --- NOVAS CHECAGENS DE COLUNA ---
+            try
             {
-                if (!ex.Message.Contains("duplicate column name")) throw;
+                var alterCommand = connection.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN CoverUrl TEXT DEFAULT ''";
+                alterCommand.ExecuteNonQuery();
             }
+            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
+
+            try
+            {
+                var alterCommand = connection.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN ScreenshotUrl1 TEXT DEFAULT ''";
+                alterCommand.ExecuteNonQuery();
+            }
+            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
+
+            try
+            {
+                var alterCommand = connection.CreateCommand();
+                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN ScreenshotUrl2 TEXT DEFAULT ''";
+                alterCommand.ExecuteNonQuery();
+            }
+            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
+
+            // --- FIM DAS NOVAS CHECAGENS ---
+
 
             // --- ETAPA 3: Iniciar a transação ---
             var transaction = connection.BeginTransaction();
@@ -157,6 +208,7 @@ namespace catalogo_jogos.Controllers
                 }
 
                 // COMANDO DE INSERÇÃO
+                // (Não precisamos adicionar as URLs aqui, elas começam vazias)
                 var command = connection.CreateCommand();
                 command.Transaction = transaction;
                 command.CommandText = @"
@@ -172,23 +224,18 @@ namespace catalogo_jogos.Controllers
 
                 command.ExecuteNonQuery();
 
-                // --- ETAPA 4: DEFINIR A ORDEM PADRÃO (CORRIGIDO) ---
-
-                // 1. Comando para buscar o último ID inserido
+                // --- ETAPA 4: DEFINIR A ORDEM PADRÃO ---
                 var getLastIdCommand = connection.CreateCommand();
                 getLastIdCommand.Transaction = transaction;
                 getLastIdCommand.CommandText = "SELECT last_insert_rowid()";
 
-                // 2. Usamos ExecuteScalar() para pegar o valor (o ID)
                 long lastId = (long)getLastIdCommand.ExecuteScalar();
 
-                // 3. Cria um novo comando para definir a Ordem = Id
                 var updateOrdemCommand = connection.CreateCommand();
                 updateOrdemCommand.Transaction = transaction;
                 updateOrdemCommand.CommandText = "UPDATE Games SET Ordem = $id WHERE Id = $id";
                 updateOrdemCommand.Parameters.AddWithValue("$id", lastId);
                 updateOrdemCommand.ExecuteNonQuery();
-
 
                 transaction.Commit();
             }
@@ -221,9 +268,11 @@ namespace catalogo_jogos.Controllers
                     resetCommand.ExecuteNonQuery();
                 }
 
+                // =======================================
+                // MUDANÇA 1: UPDATE PRINCIPAL (Atualiza o registro específico)
+                // =======================================
                 var command = connection.CreateCommand();
                 command.Transaction = transaction;
-                // ADICIONA 'Ordem' AO UPDATE
                 command.CommandText = @"
                     UPDATE Games
                     SET Name = $name, 
@@ -231,7 +280,10 @@ namespace catalogo_jogos.Controllers
                         FinishedInThisYear = $finished, 
                         Grade = $grade,
                         IsLastFinished = $islastfinished,
-                        Ordem = $ordem 
+                        Ordem = $ordem,
+                        CoverUrl = $coverurl,
+                        ScreenshotUrl1 = $ss1,
+                        ScreenshotUrl2 = $ss2
                     WHERE Id = $id";
 
                 command.Parameters.AddWithValue("$id", model.Id);
@@ -240,9 +292,35 @@ namespace catalogo_jogos.Controllers
                 command.Parameters.AddWithValue("$finished", model.FinishedInThisYear);
                 command.Parameters.AddWithValue("$grade", model.Grade);
                 command.Parameters.AddWithValue("$islastfinished", model.IsLastFinished);
-                command.Parameters.AddWithValue("$ordem", model.Ordem); // Adicionado
-
+                command.Parameters.AddWithValue("$ordem", model.Ordem);
+                command.Parameters.AddWithValue("$coverurl", model.CoverUrl ?? "");
+                command.Parameters.AddWithValue("$ss1", model.ScreenshotUrl1 ?? "");
+                command.Parameters.AddWithValue("$ss2", model.ScreenshotUrl2 ?? "");
                 command.ExecuteNonQuery();
+
+                // =======================================
+                // MUDANÇA 2: PROPAGAR IMAGENS (Atualiza todos os outros com o mesmo nome)
+                // =======================================
+                var propagateCommand = connection.CreateCommand();
+                propagateCommand.Transaction = transaction;
+                propagateCommand.CommandText = @"
+                    UPDATE Games
+                    SET CoverUrl = $coverurl,
+                        ScreenshotUrl1 = $ss1,
+                        ScreenshotUrl2 = $ss2
+                    WHERE Name = $name 
+                      AND Id != $id"; // Onde o nome é igual, mas o ID é diferente (para não re-trabalhar)
+
+                // Adicionamos os parâmetros de novo para este comando
+                propagateCommand.Parameters.AddWithValue("$coverurl", model.CoverUrl ?? "");
+                propagateCommand.Parameters.AddWithValue("$ss1", model.ScreenshotUrl1 ?? "");
+                propagateCommand.Parameters.AddWithValue("$ss2", model.ScreenshotUrl2 ?? "");
+                propagateCommand.Parameters.AddWithValue("$name", model.Name);
+                propagateCommand.Parameters.AddWithValue("$id", model.Id);
+
+                propagateCommand.ExecuteNonQuery();
+
+
                 transaction.Commit();
             }
             catch (Exception)
@@ -522,6 +600,85 @@ namespace catalogo_jogos.Controllers
             TempData["Mensagem"] = "Ordem dos jogos atualizada com sucesso!";
             // Redireciona de volta para a ListaJogos (para vermos o resultado)
             return RedirectToAction("ListaJogos");
+        }
+
+        // ... (Pode ser depois do método 'AtualizarObjetoJogo') ...
+
+        // =======================================
+        // NOVA ACTION PARA A PÁGINA DE DETALHES
+        // =======================================
+        public IActionResult Detalhar(int id)
+        {
+            // Garante que as colunas existem (é bom ter a checagem aqui também)
+            using (var connectionCheck = new SqliteConnection(_connectionString))
+            {
+                connectionCheck.Open();
+                try
+                {
+                    var alterCommand = connectionCheck.CreateCommand();
+                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN CoverUrl TEXT DEFAULT ''";
+                    alterCommand.ExecuteNonQuery();
+                }
+                catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
+                try
+                {
+                    var alterCommand = connectionCheck.CreateCommand();
+                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN ScreenshotUrl1 TEXT DEFAULT ''";
+                    alterCommand.ExecuteNonQuery();
+                }
+                catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
+                try
+                {
+                    var alterCommand = connectionCheck.CreateCommand();
+                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN ScreenshotUrl2 TEXT DEFAULT ''";
+                    alterCommand.ExecuteNonQuery();
+                }
+                catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
+            }
+
+
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var command = connection.CreateCommand();
+            // Mesma query da 'TelaEdicao'
+            command.CommandText = @"
+            SELECT Id, Name, Year, FinishedInThisYear, Grade,
+                   (SELECT MAX(g2.FinishedInThisYear) 
+                    FROM Games g2 
+                    WHERE g2.Name = Games.Name) AS EverCompleted,
+                   IsLastFinished,
+                   Ordem,
+                   CoverUrl,
+                   ScreenshotUrl1,
+                   ScreenshotUrl2
+            FROM Games
+            WHERE Id = $id";
+
+            command.Parameters.AddWithValue("$id", id);
+
+            using var reader = command.ExecuteReader();
+            if (reader.Read())
+            {
+                var jogo = new Jogo
+                {
+                    Id = reader.GetInt32(0),
+                    Name = reader.GetString(1),
+                    Year = reader.GetInt32(2),
+                    FinishedInThisYear = reader.GetBoolean(3),
+                    Grade = reader.GetString(4),
+                    EverCompleted = reader.GetBoolean(5),
+                    IsLastFinished = reader.GetBoolean(6),
+                    Ordem = reader.GetInt32(7),
+                    CoverUrl = reader.GetString(8),
+                    ScreenshotUrl1 = reader.GetString(9),
+                    ScreenshotUrl2 = reader.GetString(10)
+                };
+                // Envia o jogo para uma View chamada 'Detalhar.cshtml'
+                return View(jogo);
+            }
+
+            return NotFound();
         }
 
     }
