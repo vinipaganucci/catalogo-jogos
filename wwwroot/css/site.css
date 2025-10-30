@@ -20,3 +20,93 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+    /* ======================================= */
+    /* === ESTILOS DO MODO ESCURO (CORRIGIDO) === */
+    /* ======================================= */
+
+    body.dark-mode {
+        background-color: #1a1a1a;
+        color: #f0f0f0;
+    }
+
+        body.dark-mode .card,
+        body.dark-mode .list-group-item,
+        body.dark-mode .modal-content {
+            background-color: #2c2c2c;
+            color: #f0f0f0;
+            border-color: #444;
+        }
+
+        /* === CORREÇÃO DA TABELA (AGORA COM !important) === */
+        body.dark-mode .table {
+            color: #f0f0f0;
+            border-color: #444;
+        }
+
+        /* Cabeçalho da tabela (A CORREÇÃO ESTÁ AQUI) */
+        body.dark-mode .table-light {
+            color: #f0f0f0 !important; /* Força o texto a ser claro */
+            background-color: #333 !important; /* Força o fundo a ser escuro */
+            border-color: #444 !important;
+        }
+
+        /* Linhas listradas */
+        body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) > * {
+            background-color: #2c2c2c;
+            color: #f0f0f0;
+        }
+
+        body.dark-mode .table-striped > tbody > tr:nth-of-type(even) > * {
+            background-color: #222;
+            color: #f0f0f0;
+        }
+        /* === FIM DA CORREÇÃO DA TABELA === */
+
+
+        body.dark-mode .card-header,
+        body.dark-mode .modal-footer {
+            border-bottom-color: #444;
+            border-top-color: #444;
+        }
+
+        body.dark-mode .form-control,
+        body.dark-mode .form-select {
+            background-color: #333;
+            color: #f0f0f0;
+            border-color: #555;
+        }
+
+            body.dark-mode .form-control::placeholder {
+                color: #999;
+            }
+
+        body.dark-mode .btn-light,
+        body.dark-mode .btn-outline-secondary {
+            background-color: #444;
+            color: #f0f0f0;
+            border-color: #555;
+        }
+
+        body.dark-mode .info-card {
+            background-color: #222 !important;
+        }
+
+        body.dark-mode .alert-secondary,
+        body.dark-mode .alert-warning {
+            background-color: #333;
+            border-color: #444;
+            color: #ccc;
+        }
+
+/* Footer (Menor) */
+.footer {
+    font-size: 0.8rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+body.dark-mode .footer {
+    border-top-color: #333 !important;
+    color: #888 !important;
+}
