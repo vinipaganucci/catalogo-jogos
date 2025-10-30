@@ -2,11 +2,70 @@
 @{
     ViewData["Title"] = @Model.Name;
 
-    // LÊ OS FILTROS QUE A 'LISTAJOGOS' ENVIOU PELA URL
+    // --- LÓGICA PARA CONVERTER O LINK DO YOUTUBE ---
+    string videoEmbedUrl = null;
+    if (!string.IsNullOrEmpty(Model.YoutubeUrl))
+    {
+        if (Model.YoutubeUrl.Contains("watch?v="))
+        {
+            videoEmbedUrl = Model.YoutubeUrl.Replace("watch?v=", "embed/");
+        }
+        else if (Model.YoutubeUrl.Contains("youtu.be/"))
+        {
+            videoEmbedUrl = Model.YoutubeUrl.Replace("youtu.be/", "www.youtube.com/embed/");
+        }
+        else if (Model.YoutubeUrl.Contains("/embed/"))
+        {
+            videoEmbedUrl = Model.YoutubeUrl; // Já está no formato correto
+        }
+    }
+
+    // --- LÓGICA DAS DLCS ---
+    bool hasDlcs = !string.IsNullOrEmpty(Model.DlcUrl1) ||
+                   !string.IsNullOrEmpty(Model.DlcUrl2) ||
+                   !string.IsNullOrEmpty(Model.DlcUrl3) ||
+                   !string.IsNullOrEmpty(Model.DlcUrl4);
+
+    bool hasMedia = !string.IsNullOrEmpty(videoEmbedUrl) || hasDlcs;
+
+    // --- LÓGICA DOS FILTROS ---
     var termoBusca = Context.Request.Query["termoBusca"];
     var sortOrder = Context.Request.Query["sortOrder"];
     var filtroAno = Context.Request.Query["filtroAno"];
     var filtroNaoZerados = Context.Request.Query["filtroNaoZerados"];
+
+    // =======================================
+    // --- NOVA LÓGICA DE COR DA NOTA ---
+    // =======================================
+    string badgeColor;
+    switch (Model.Grade)
+    {
+        case "Obra-Prima":
+            badgeColor = "bg-warning text-dark"; // Dourado
+            break;
+        case "Excelente":
+            badgeColor = "bg-success"; // Verde
+            break;
+        case "Muito Bom":
+            badgeColor = "bg-primary"; // Azul
+            break;
+        case "Bom":
+            badgeColor = "bg-info text-dark"; // Ciano
+            break;
+        case "Mediano":
+            badgeColor = "bg-secondary"; // Cinza
+            break;
+        case "Ruim":
+            badgeColor = "bg-danger"; // Vermelho
+            break;
+        case "Péssimo":
+        case "Lixo Podre":
+            badgeColor = "bg-dark"; // Preto
+            break;
+        default:
+            badgeColor = "bg-light text-dark"; // Padrão
+            break;
+    }
 }
 
 <style>
@@ -24,9 +83,9 @@
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
-    .screenshot {
+    .dlc-image {
         width: 100%;
-        height: 300px;
+        height: 150px;
         object-fit: cover;
         border-radius: 8px;
         margin-bottom: 15px;
@@ -43,6 +102,26 @@
     .info-card {
         background-color: #f8f9fa;
     }
+
+    .video-wrapper {
+        position: relative;
+        padding-bottom: 56.25%; /* 16:9 */
+        height: 0;
+        overflow: hidden;
+        max-width: 100%;
+        background: #000;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        margin-bottom: 15px;
+    }
+
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
 </style>
 
 <div class="container mt-4 mb-5" style="max-width: 900px;">
@@ -80,9 +159,10 @@
                         Ano Jogado/Terminado
                         <span class="fw-bold">@Model.Year</span>
                     </li>
+
                     <li class="list-group-item d-flex justify-content-between align-items-center info-card">
                         Nota
-                        <span class="badge bg-primary rounded-pill fs-6">@Model.Grade</span>
+                        <span class="badge @badgeColor rounded-pill fs-6">@Model.Grade</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center info-card">
                         Terminado esse ano?
@@ -96,43 +176,85 @@
                         }
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center info-card">
-                        Ordem na Lista
-                        <span class="fw-bold">@Model.Ordem</span>
+                        Já Zerado Alguma Vez?
+                        @if (Model.EverCompleted)
+                        {
+                            <span class="fw-bold">Sim</span>
+                        }
+                        else
+                        {
+                            <span class="fw-bold">Não</span>
+                        }
                     </li>
                 </ul>
             </div>
 
             <div class="card">
                 <div class="card-header text-center">
-                    <h4>Screenshots</h4>
+                    <h4>Gameplay e DLCs</h4>
                 </div>
                 <div class="card-body">
-                    @if (!string.IsNullOrEmpty(Model.ScreenshotUrl1) || !string.IsNullOrEmpty(Model.ScreenshotUrl2))
+
+                    @if (!hasMedia)
                     {
-                        <div class="row">
-                            @if (!string.IsNullOrEmpty(Model.ScreenshotUrl1))
-                            {
-                                <div class="col-md-6">
-                                    <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal"
-                                       onclick="showImageInModal('@Model.ScreenshotUrl1')">
-                                        <img src="@Model.ScreenshotUrl1" alt="Screenshot 1" class="screenshot" />
-                                    </a>
-                                </div>
-                            }
-                            @if (!string.IsNullOrEmpty(Model.ScreenshotUrl2))
-                            {
-                                <div class="col-md-6">
-                                    <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal"
-                                       onclick="showImageInModal('@Model.ScreenshotUrl2')">
-                                        <img src="@Model.ScreenshotUrl2" alt="Screenshot 2" class="screenshot" />
-                                    </a>
-                                </div>
-                            }
-                        </div>
+                        <div class="alert alert-secondary m-0">Nenhum vídeo ou foto de DLC cadastrado.</div>
                     }
                     else
                     {
-                        <div class="alert alert-secondary m-0">Nenhuma screenshot cadastrada.</div>
+                        @if (!string.IsNullOrEmpty(videoEmbedUrl))
+                        {
+                            <h5 class="mb-3">Gameplay</h5>
+                            <div class="video-wrapper">
+                                <iframe src="@videoEmbedUrl"
+                                        frameborder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                        }
+
+                        @if (hasDlcs)
+                        {
+                            <h5 class="mb-3 mt-4">DLCs Completas</h5>
+                            <div class="row">
+                                @if (!string.IsNullOrEmpty(Model.DlcUrl1))
+                                {
+                                    <div class="col-md-6 col-lg-3">
+                                        <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal"
+                                           onclick="showImageInModal('@Model.DlcUrl1')">
+                                            <img src="@Model.DlcUrl1" alt="DLC 1" class="dlc-image" />
+                                        </a>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.DlcUrl2))
+                                {
+                                    <div class="col-md-6 col-lg-3">
+                                        <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal"
+                                           onclick="showImageInModal('@Model.DlcUrl2')">
+                                            <img src="@Model.DlcUrl2" alt="DLC 2" class="dlc-image" />
+                                        </a>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.DlcUrl3))
+                                {
+                                    <div class="col-md-6 col-lg-3">
+                                        <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal"
+                                           onclick="showImageInModal('@Model.DlcUrl3')">
+                                            <img src="@Model.DlcUrl3" alt="DLC 3" class="dlc-image" />
+                                        </a>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.DlcUrl4))
+                                {
+                                    <div class="col-md-6 col-lg-3">
+                                        <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal"
+                                           onclick="showImageInModal('@Model.DlcUrl4')">
+                                            <img src="@Model.DlcUrl4" alt="DLC 4" class="dlc-image" />
+                                        </a>
+                                    </div>
+                                }
+                            </div>
+                        }
                     }
                 </div>
             </div>
@@ -170,7 +292,7 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-body p-2">
-                <img id="modalImage" src="" alt="Screenshot Ampliada" class="modal-img" />
+                <img id="modalImage" src="" alt="Imagem Ampliada" class="modal-img" />
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>

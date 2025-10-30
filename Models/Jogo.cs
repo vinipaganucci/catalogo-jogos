@@ -11,7 +11,13 @@
         public bool IsLastFinished { get; set; }
         public int Ordem { get; set; }
         public string CoverUrl { get; set; }
-        public string ScreenshotUrl1 { get; set; }
-        public string ScreenshotUrl2 { get; set; }
+
+        
+        public string DlcUrl1 { get; set; } 
+        public string DlcUrl2 { get; set; } 
+        public string DlcUrl3 { get; set; }
+        public string DlcUrl4 { get; set; } 
+       
+        public string YoutubeUrl { get; set; }
     }
 }

@@ -13,7 +13,13 @@
 <div class="container mt-5" style="max-width: 500px;">
     <h3 class="mb-4 text-center">@ViewData["Title"]</h3>
 
-    <form asp-action="AtualizarObjetoJogo" method="post">
+    <form asp-action="AtualizarObjetoJogo"
+          asp-route-termoBusca="@termoBusca"
+          asp-route-sortOrder="@sortOrder"
+          asp-route-filtroAno="@filtroAno"
+          asp-route-filtroNaoZerados="@filtroNaoZerados"
+          method="post">
+
         <input type="hidden" asp-for="Id" />
 
         <div class="mb-3 row">
@@ -22,7 +28,6 @@
                 <input type="text" class="form-control" placeholder="Ex: Resident Evil" asp-for="Name" />
             </div>
         </div>
-
         <div class="mb-3 row">
             <label class="col-sm-5 col-form-label" asp-for="Year">Ano Que Foi Jogado:</label>
             <div class="col-sm-7">
@@ -34,7 +39,6 @@
                 </select>
             </div>
         </div>
-
         <div class="mb-4 row">
             <label class="col-sm-5 col-form-label" asp-for="Grade">Nota:</label>
             <div class="col-sm-7">
@@ -51,7 +55,6 @@
                 </select>
             </div>
         </div>
-
         <div class="mb-3 row">
             <label class="col-sm-5 col-form-label" asp-for="Ordem">Ordem (Manual):</label>
             <div class="col-sm-7">
@@ -65,21 +68,40 @@
                 <input type="text" class="form-control" asp-for="CoverUrl" placeholder="http://..." />
             </div>
         </div>
+
         <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="ScreenshotUrl1">URL Screenshot 1:</label>
+            <label class="col-sm-5 col-form-label" asp-for="DlcUrl1">URL Foto DLC 1:</label>
             <div class="col-sm-7">
-                <input type="text" class="form-control" asp-for="ScreenshotUrl1" placeholder="http://..." />
+                <input type="text" class="form-control" asp-for="DlcUrl1" placeholder="http://..." />
             </div>
         </div>
         <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="ScreenshotUrl2">URL Screenshot 2:</label>
+            <label class="col-sm-5 col-form-label" asp-for="DlcUrl2">URL Foto DLC 2:</label>
             <div class="col-sm-7">
-                <input type="text" class="form-control" asp-for="ScreenshotUrl2" placeholder="http://..." />
+                <input type="text" class="form-control" asp-for="DlcUrl2" placeholder="http://..." />
+            </div>
+        </div>
+        <div class="mb-3 row">
+            <label class="col-sm-5 col-form-label" asp-for="DlcUrl3">URL Foto DLC 3:</label>
+            <div class="col-sm-7">
+                <input type="text" class="form-control" asp-for="DlcUrl3" placeholder="http://..." />
+            </div>
+        </div>
+        <div class="mb-3 row">
+            <label class="col-sm-5 col-form-label" asp-for="DlcUrl4">URL Foto DLC 4:</label>
+            <div class="col-sm-7">
+                <input type="text" class="form-control" asp-for="DlcUrl4" placeholder="http://..." />
+            </div>
+        </div>
+        <div class="mb-3 row">
+            <label class="col-sm-5 col-form-label" asp-for="YoutubeUrl">URL do YouTube:</label>
+            <div class="col-sm-7">
+                <input type="text" class="form-control" asp-for="YoutubeUrl" placeholder="https://www.youtube.com/watch?v=..." />
             </div>
         </div>
 
         <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="FinishedInThisYear">Zerado Nesse Ano?:</label>
+            <label class="col-sm-5 col-form-label text-sm-end" asp-for="FinishedInThisYear">Zerado Nesse Ano?:</label>
             <div class="col-sm-7">
                 <div class="form-check pt-2">
                     <input asp-for="FinishedInThisYear" type="checkbox" class="form-check-input" value="true" id="finishedCheckbox" />
@@ -87,7 +109,7 @@
             </div>
         </div>
         <div class="mb-3 row" id="lastFinishedContainer" style="display: none;">
-            <label class="col-sm-5 col-form-label" asp-for="IsLastFinished">Este foi o último que zerei?</label>
+            <label class="col-sm-5 col-form-label text-sm-end" asp-for="IsLastFinished">Este foi o último que zerei?</label>
             <div class="col-sm-7">
                 <div class="form-check pt-2">
                     <input asp-for="IsLastFinished" type="checkbox" class="form-check-input" value="true" id="lastFinishedCheckbox" />
@@ -97,13 +119,13 @@
 
         <div class="d-grid gap-2">
             <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-
-            <a asp-action="ListaJogos"
+            <a asp-action="Detalhar"
+               asp-route-id="@Model.Id"
                asp-route-termoBusca="@termoBusca"
                asp-route-sortOrder="@sortOrder"
                asp-route-filtroAno="@filtroAno"
                asp-route-filtroNaoZerados="@filtroNaoZerados"
-               class="btn btn-secondary">Cancelar</a>
+               class="btn btn-secondary">Voltar</a>
         </div>
     </form>
 </div>
@@ -111,6 +133,7 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // ... (todo o seu JS dos checkboxes continua aqui, sem mudança) ...
             var yearSelect = document.getElementById('selectYear');
             var lastFinishedContainer = document.getElementById('lastFinishedContainer');
             var currentYear = @currentYear;
