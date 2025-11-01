@@ -2,69 +2,31 @@
 @{
     ViewData["Title"] = @Model.Name;
 
-    // --- LÓGICA PARA CONVERTER O LINK DO YOUTUBE ---
+    // ... (Lógica de URL do Youtube, DLCs, Filtros e Cor da Nota não muda) ...
     string videoEmbedUrl = null;
     if (!string.IsNullOrEmpty(Model.YoutubeUrl))
     {
-        if (Model.YoutubeUrl.Contains("watch?v="))
-        {
-            videoEmbedUrl = Model.YoutubeUrl.Replace("watch?v=", "embed/");
-        }
-        else if (Model.YoutubeUrl.Contains("youtu.be/"))
-        {
-            videoEmbedUrl = Model.YoutubeUrl.Replace("youtu.be/", "www.youtube.com/embed/");
-        }
-        else if (Model.YoutubeUrl.Contains("/embed/"))
-        {
-            videoEmbedUrl = Model.YoutubeUrl; // Já está no formato correto
-        }
+        if (Model.YoutubeUrl.Contains("watch?v=")) videoEmbedUrl = Model.YoutubeUrl.Replace("watch?v=", "embed/");
+        else if (Model.YoutubeUrl.Contains("youtu.be/")) videoEmbedUrl = Model.YoutubeUrl.Replace("youtu.be/", "www.youtube.com/embed/");
+        else if (Model.YoutubeUrl.Contains("/embed/")) videoEmbedUrl = Model.YoutubeUrl;
     }
-
-    // --- LÓGICA DAS DLCS ---
-    bool hasDlcs = !string.IsNullOrEmpty(Model.DlcUrl1) ||
-                   !string.IsNullOrEmpty(Model.DlcUrl2) ||
-                   !string.IsNullOrEmpty(Model.DlcUrl3) ||
-                   !string.IsNullOrEmpty(Model.DlcUrl4);
-
+    bool hasDlcs = !string.IsNullOrEmpty(Model.DlcUrl1) || !string.IsNullOrEmpty(Model.DlcUrl2) || !string.IsNullOrEmpty(Model.DlcUrl3) || !string.IsNullOrEmpty(Model.DlcUrl4);
     bool hasMedia = !string.IsNullOrEmpty(videoEmbedUrl) || hasDlcs;
-
-    // --- LÓGICA DOS FILTROS ---
     var termoBusca = Context.Request.Query["termoBusca"];
     var sortOrder = Context.Request.Query["sortOrder"];
     var filtroAno = Context.Request.Query["filtroAno"];
     var filtroNaoZerados = Context.Request.Query["filtroNaoZerados"];
-
-    // =======================================
-    // --- NOVA LÓGICA DE COR DA NOTA ---
-    // =======================================
     string badgeColor;
     switch (Model.Grade)
     {
-        case "Obra-Prima":
-            badgeColor = "bg-warning text-dark"; // Dourado
-            break;
-        case "Excelente":
-            badgeColor = "bg-success"; // Verde
-            break;
-        case "Muito Bom":
-            badgeColor = "bg-primary"; // Azul
-            break;
-        case "Bom":
-            badgeColor = "bg-info text-dark"; // Ciano
-            break;
-        case "Mediano":
-            badgeColor = "bg-secondary"; // Cinza
-            break;
-        case "Ruim":
-            badgeColor = "bg-danger"; // Vermelho
-            break;
-        case "Péssimo":
-        case "Lixo Podre":
-            badgeColor = "bg-dark"; // Preto
-            break;
-        default:
-            badgeColor = "bg-light text-dark"; // Padrão
-            break;
+        case "Obra-Prima": badgeColor = "bg-warning text-dark"; break;
+        case "Excelente": badgeColor = "bg-success"; break;
+        case "Muito Bom": badgeColor = "bg-primary"; break;
+        case "Bom": badgeColor = "bg-info text-dark"; break;
+        case "Mediano": badgeColor = "bg-secondary"; break;
+        case "Ruim": badgeColor = "bg-danger"; break;
+        case "Péssimo": case "Lixo Podre": badgeColor = "bg-dark"; break;
+        default: badgeColor = "bg-light text-dark"; break;
     }
 }
 
@@ -105,7 +67,7 @@
 
     .video-wrapper {
         position: relative;
-        padding-bottom: 56.25%; /* 16:9 */
+        padding-bottom: 56.25%;
         height: 0;
         overflow: hidden;
         max-width: 100%;
@@ -155,15 +117,8 @@
                     <h4>Informações</h4>
                 </div>
                 <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center info-card">
-                        Ano Jogado/Terminado
-                        <span class="fw-bold">@Model.Year</span>
-                    </li>
-
-                    <li class="list-group-item d-flex justify-content-between align-items-center info-card">
-                        Nota
-                        <span class="badge @badgeColor rounded-pill fs-6">@Model.Grade</span>
-                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center info-card">Ano Jogado/Terminado <span class="fw-bold">@Model.Year</span></li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center info-card">Nota <span class="badge @badgeColor rounded-pill fs-6">@Model.Grade</span></li>
                     <li class="list-group-item d-flex justify-content-between align-items-center info-card">
                         Terminado esse ano?
                         @if (Model.FinishedInThisYear)
@@ -172,6 +127,7 @@
                         }
                         else
                         {
+
                             <span class="fw-bold">Não</span>
                         }
                     </li>
@@ -183,6 +139,19 @@
                         }
                         else
                         {
+
+                            <span class="fw-bold">Não</span>
+                        }
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center info-card">
+                        Platinado nesse ano?
+                        @if (Model.Platinado)
+                        {
+                            <span class="fw-bold">Sim</span>
+                        }
+                        else
+                        {
+
                             <span class="fw-bold">Não</span>
                         }
                     </li>
@@ -194,7 +163,6 @@
                     <h4>Gameplay e DLCs</h4>
                 </div>
                 <div class="card-body">
-
                     @if (!hasMedia)
                     {
                         <div class="alert alert-secondary m-0">Nenhum vídeo ou foto de DLC cadastrado.</div>
@@ -205,11 +173,7 @@
                         {
                             <h5 class="mb-3">Gameplay</h5>
                             <div class="video-wrapper">
-                                <iframe src="@videoEmbedUrl"
-                                        frameborder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowfullscreen>
-                                </iframe>
+                                <iframe src="@videoEmbedUrl" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                             </div>
                         }
 
@@ -219,39 +183,19 @@
                             <div class="row">
                                 @if (!string.IsNullOrEmpty(Model.DlcUrl1))
                                 {
-                                    <div class="col-md-6 col-lg-3">
-                                        <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal"
-                                           onclick="showImageInModal('@Model.DlcUrl1')">
-                                            <img src="@Model.DlcUrl1" alt="DLC 1" class="dlc-image" />
-                                        </a>
-                                    </div>
+                                    <div class="col-md-6 col-lg-3"><a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="showImageInModal('@Model.DlcUrl1')"><img src="@Model.DlcUrl1" alt="DLC 1" class="dlc-image" /></a></div>
                                 }
                                 @if (!string.IsNullOrEmpty(Model.DlcUrl2))
                                 {
-                                    <div class="col-md-6 col-lg-3">
-                                        <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal"
-                                           onclick="showImageInModal('@Model.DlcUrl2')">
-                                            <img src="@Model.DlcUrl2" alt="DLC 2" class="dlc-image" />
-                                        </a>
-                                    </div>
+                                    <div class="col-md-6 col-lg-3"><a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="showImageInModal('@Model.DlcUrl2')"><img src="@Model.DlcUrl2" alt="DLC 2" class="dlc-image" /></a></div>
                                 }
                                 @if (!string.IsNullOrEmpty(Model.DlcUrl3))
                                 {
-                                    <div class="col-md-6 col-lg-3">
-                                        <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal"
-                                           onclick="showImageInModal('@Model.DlcUrl3')">
-                                            <img src="@Model.DlcUrl3" alt="DLC 3" class="dlc-image" />
-                                        </a>
-                                    </div>
+                                    <div class="col-md-6 col-lg-3"><a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="showImageInModal('@Model.DlcUrl3')"><img src="@Model.DlcUrl3" alt="DLC 3" class="dlc-image" /></a></div>
                                 }
                                 @if (!string.IsNullOrEmpty(Model.DlcUrl4))
                                 {
-                                    <div class="col-md-6 col-lg-3">
-                                        <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal"
-                                           onclick="showImageInModal('@Model.DlcUrl4')">
-                                            <img src="@Model.DlcUrl4" alt="DLC 4" class="dlc-image" />
-                                        </a>
-                                    </div>
+                                    <div class="col-md-6 col-lg-3"><a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="showImageInModal('@Model.DlcUrl4')"><img src="@Model.DlcUrl4" alt="DLC 4" class="dlc-image" /></a></div>
                                 }
                             </div>
                         }
@@ -264,24 +208,8 @@
 
     <div class="row mt-4">
         <div class="col-12 text-center">
-
-            <a asp-action="TelaEdicao" asp-route-id="@Model.Id"
-               asp-route-termoBusca="@termoBusca"
-               asp-route-sortOrder="@sortOrder"
-               asp-route-filtroAno="@filtroAno"
-               asp-route-filtroNaoZerados="@filtroNaoZerados"
-               class="btn btn-warning btn-lg px-5 me-2">
-                Editar
-            </a>
-
-            <a asp-action="ListaJogos"
-               asp-route-termoBusca="@termoBusca"
-               asp-route-sortOrder="@sortOrder"
-               asp-route-filtroAno="@filtroAno"
-               asp-route-filtroNaoZerados="@filtroNaoZerados"
-               class="btn btn-secondary btn-lg px-5">
-                Voltar para a Lista
-            </a>
+            <a asp-action="TelaEdicao" asp-route-id="@Model.Id" asp-route-termoBusca="@termoBusca" asp-route-sortOrder="@sortOrder" asp-route-filtroAno="@filtroAno" asp-route-filtroNaoZerados="@filtroNaoZerados" class="btn btn-warning btn-lg px-5 me-2">Editar</a>
+            <a asp-action="ListaJogos" asp-route-termoBusca="@termoBusca" asp-route-sortOrder="@sortOrder" asp-route-filtroAno="@filtroAno" asp-route-filtroNaoZerados="@filtroNaoZerados" class="btn btn-secondary btn-lg px-5">Voltar para a Lista</a>
         </div>
     </div>
 

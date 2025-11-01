@@ -22,66 +22,12 @@ namespace catalogo_jogos.Controllers
         //Tela de edição dos jogos
         public IActionResult TelaEdicao(int id)
         {
-            // Garante que as colunas existem
             using var connectionCheck = new SqliteConnection(_connectionString);
             connectionCheck.Open();
             try
             {
                 var alterCommand = connectionCheck.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN IsLastFinished INTEGER DEFAULT 0";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            try
-            {
-                var alterCommand = connectionCheck.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Ordem INTEGER DEFAULT 0";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            try
-            {
-                var alterCommand = connectionCheck.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN CoverUrl TEXT DEFAULT ''";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-
-            // --- SUBSTITUÍDO E AMPLIADO ---
-            try
-            {
-                var alterCommand = connectionCheck.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN DlcUrl1 TEXT DEFAULT ''";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            try
-            {
-                var alterCommand = connectionCheck.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN DlcUrl2 TEXT DEFAULT ''";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            try
-            {
-                var alterCommand = connectionCheck.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN DlcUrl3 TEXT DEFAULT ''";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            try
-            {
-                var alterCommand = connectionCheck.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN DlcUrl4 TEXT DEFAULT ''";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            // --- FIM DA MUDANÇA ---
-
-            try
-            {
-                var alterCommand = connectionCheck.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN YoutubeUrl TEXT DEFAULT ''";
+                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Platinado INTEGER DEFAULT 0";
                 alterCommand.ExecuteNonQuery();
             }
             catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
@@ -92,7 +38,6 @@ namespace catalogo_jogos.Controllers
             connection.Open();
 
             var command = connection.CreateCommand();
-            // ADICIONA AS NOVAS COLUNAS AO SELECT
             command.CommandText = @"
             SELECT Id, Name, Year, FinishedInThisYear, Grade,
                    (SELECT MAX(g2.FinishedInThisYear) 
@@ -105,7 +50,8 @@ namespace catalogo_jogos.Controllers
                    DlcUrl2, 
                    DlcUrl3, 
                    DlcUrl4, 
-                   YoutubeUrl
+                   YoutubeUrl,
+                   Platinado
             FROM Games
             WHERE Id = $id";
 
@@ -125,13 +71,12 @@ namespace catalogo_jogos.Controllers
                     IsLastFinished = reader.GetBoolean(6),
                     Ordem = reader.GetInt32(7),
                     CoverUrl = reader.GetString(8),
-                    // --- SUBSTITUÍDO E AMPLIADO ---
                     DlcUrl1 = reader.GetString(9),
                     DlcUrl2 = reader.GetString(10),
                     DlcUrl3 = reader.GetString(11),
                     DlcUrl4 = reader.GetString(12),
-                    // --- FIM DA MUDANÇA ---
-                    YoutubeUrl = reader.GetString(13)
+                    YoutubeUrl = reader.GetString(13),
+                    Platinado = reader.GetBoolean(14)
                 };
                 return View(jogo);
             }
@@ -164,95 +109,28 @@ namespace catalogo_jogos.Controllers
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
-            // --- ETAPA 1 e 2 (Garantir colunas) ---
             var createCommand = connection.CreateCommand();
             createCommand.CommandText = @"
                 CREATE TABLE IF NOT EXISTS Games (
-                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    Name TEXT,
-                    Year INTEGER,
-                    FinishedInThisYear INTEGER,
-                    Grade TEXT,
-                    IsLastFinished INTEGER DEFAULT 0,
-                    Ordem INTEGER DEFAULT 0,
-                    CoverUrl TEXT DEFAULT '',
-                    DlcUrl1 TEXT DEFAULT '', 
-                    DlcUrl2 TEXT DEFAULT '', 
-                    DlcUrl3 TEXT DEFAULT '', 
-                    DlcUrl4 TEXT DEFAULT '', 
-                    YoutubeUrl TEXT DEFAULT '' 
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT, Year INTEGER,
+                    FinishedInThisYear INTEGER, Grade TEXT, IsLastFinished INTEGER DEFAULT 0,
+                    Ordem INTEGER DEFAULT 0, CoverUrl TEXT DEFAULT '', DlcUrl1 TEXT DEFAULT '', 
+                    DlcUrl2 TEXT DEFAULT '', DlcUrl3 TEXT DEFAULT '', DlcUrl4 TEXT DEFAULT '', 
+                    YoutubeUrl TEXT DEFAULT '', Platinado INTEGER DEFAULT 0
                 );";
             createCommand.ExecuteNonQuery();
 
-            // --- Checagens 'ALTER TABLE' ---
             try
             {
                 var alterCommand = connection.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN IsLastFinished INTEGER DEFAULT 0";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            try
-            {
-                var alterCommand = connection.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Ordem INTEGER DEFAULT 0";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            try
-            {
-                var alterCommand = connection.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN CoverUrl TEXT DEFAULT ''";
+                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Platinado INTEGER DEFAULT 0";
                 alterCommand.ExecuteNonQuery();
             }
             catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
 
-            // --- SUBSTITUÍDO E AMPLIADO ---
-            try
-            {
-                var alterCommand = connection.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN DlcUrl1 TEXT DEFAULT ''";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            try
-            {
-                var alterCommand = connection.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN DlcUrl2 TEXT DEFAULT ''";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            try
-            {
-                var alterCommand = connection.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN DlcUrl3 TEXT DEFAULT ''";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            try
-            {
-                var alterCommand = connection.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN DlcUrl4 TEXT DEFAULT ''";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            // --- FIM DA MUDANÇA ---
-
-            try
-            {
-                var alterCommand = connection.CreateCommand();
-                alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN YoutubeUrl TEXT DEFAULT ''";
-                alterCommand.ExecuteNonQuery();
-            }
-            catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-
-            // --- FIM DAS CHECAGENS ---
-
-            // --- ETAPA 3: Iniciar a transação ---
             var transaction = connection.BeginTransaction();
             try
             {
-                // ... (O resto da sua Action SaveGame continua igual) ...
                 if (model.IsLastFinished)
                 {
                     var resetCommand = connection.CreateCommand();
@@ -264,8 +142,8 @@ namespace catalogo_jogos.Controllers
                 var command = connection.CreateCommand();
                 command.Transaction = transaction;
                 command.CommandText = @"
-                    INSERT INTO Games (Name, Year, FinishedInThisYear, Grade, IsLastFinished)
-                    VALUES ($name, $year, $finished, $grade, $islastfinished);
+                    INSERT INTO Games (Name, Year, FinishedInThisYear, Grade, IsLastFinished, Platinado)
+                    VALUES ($name, $year, $finished, $grade, $islastfinished, $platinado);
                     ";
 
                 command.Parameters.AddWithValue("$name", model.Name);
@@ -273,6 +151,7 @@ namespace catalogo_jogos.Controllers
                 command.Parameters.AddWithValue("$finished", model.FinishedInThisYear);
                 command.Parameters.AddWithValue("$grade", model.Grade);
                 command.Parameters.AddWithValue("$islastfinished", model.IsLastFinished);
+                command.Parameters.AddWithValue("$platinado", model.Platinado);
 
                 command.ExecuteNonQuery();
 
@@ -315,7 +194,6 @@ namespace catalogo_jogos.Controllers
 
             try
             {
-                // LÓGICA DE RESET (IsLastFinished)
                 if (model.IsLastFinished)
                 {
                     var resetCommand = connection.CreateCommand();
@@ -324,23 +202,15 @@ namespace catalogo_jogos.Controllers
                     resetCommand.ExecuteNonQuery();
                 }
 
-                // UPDATE PRINCIPAL (com DlcUrl)
                 var command = connection.CreateCommand();
                 command.Transaction = transaction;
                 command.CommandText = @"
                     UPDATE Games
-                    SET Name = $name, 
-                        Year = $year, 
-                        FinishedInThisYear = $finished, 
-                        Grade = $grade,
-                        IsLastFinished = $islastfinished,
-                        Ordem = $ordem,
-                        CoverUrl = $coverurl,
-                        DlcUrl1 = $dlc1, 
-                        DlcUrl2 = $dlc2, 
-                        DlcUrl3 = $dlc3, 
-                        DlcUrl4 = $dlc4, 
-                        YoutubeUrl = $youtubeurl
+                    SET Name = $name, Year = $year, FinishedInThisYear = $finished, 
+                        Grade = $grade, IsLastFinished = $islastfinished, Ordem = $ordem,
+                        CoverUrl = $coverurl, DlcUrl1 = $dlc1, DlcUrl2 = $dlc2, 
+                        DlcUrl3 = $dlc3, DlcUrl4 = $dlc4, YoutubeUrl = $youtubeurl,
+                        Platinado = $platinado
                     WHERE Id = $id";
 
                 command.Parameters.AddWithValue("$id", model.Id);
@@ -351,41 +221,28 @@ namespace catalogo_jogos.Controllers
                 command.Parameters.AddWithValue("$islastfinished", model.IsLastFinished);
                 command.Parameters.AddWithValue("$ordem", model.Ordem);
                 command.Parameters.AddWithValue("$coverurl", model.CoverUrl ?? "");
-
-                // --- SUBSTITUÍDO E AMPLIADO ---
                 command.Parameters.AddWithValue("$dlc1", model.DlcUrl1 ?? "");
                 command.Parameters.AddWithValue("$dlc2", model.DlcUrl2 ?? "");
                 command.Parameters.AddWithValue("$dlc3", model.DlcUrl3 ?? "");
                 command.Parameters.AddWithValue("$dlc4", model.DlcUrl4 ?? "");
-                // --- FIM DA MUDANÇA ---
-
                 command.Parameters.AddWithValue("$youtubeurl", model.YoutubeUrl ?? "");
+                command.Parameters.AddWithValue("$platinado", model.Platinado);
 
                 command.ExecuteNonQuery();
 
-                // PROPAGAR IMAGENS E VÍDEO
                 var propagateCommand = connection.CreateCommand();
                 propagateCommand.Transaction = transaction;
                 propagateCommand.CommandText = @"
                     UPDATE Games
-                    SET CoverUrl = $coverurl,
-                        DlcUrl1 = $dlc1, 
-                        DlcUrl2 = $dlc2, 
-                        DlcUrl3 = $dlc3, 
-                        DlcUrl4 = $dlc4, 
-                        YoutubeUrl = $youtubeurl
-                    WHERE Name = $name 
-                      AND Id != $id";
+                    SET CoverUrl = $coverurl, DlcUrl1 = $dlc1, DlcUrl2 = $dlc2, 
+                        DlcUrl3 = $dlc3, DlcUrl4 = $dlc4, YoutubeUrl = $youtubeurl
+                    WHERE Name = $name AND Id != $id";
 
                 propagateCommand.Parameters.AddWithValue("$coverurl", model.CoverUrl ?? "");
-
-                // --- SUBSTITUÍDO E AMPLIADO ---
                 propagateCommand.Parameters.AddWithValue("$dlc1", model.DlcUrl1 ?? "");
                 propagateCommand.Parameters.AddWithValue("$dlc2", model.DlcUrl2 ?? "");
                 propagateCommand.Parameters.AddWithValue("$dlc3", model.DlcUrl3 ?? "");
                 propagateCommand.Parameters.AddWithValue("$dlc4", model.DlcUrl4 ?? "");
-                // --- FIM DA MUDANÇA ---
-
                 propagateCommand.Parameters.AddWithValue("$youtubeurl", model.YoutubeUrl ?? "");
                 propagateCommand.Parameters.AddWithValue("$name", model.Name);
                 propagateCommand.Parameters.AddWithValue("$id", model.Id);
@@ -416,6 +273,7 @@ namespace catalogo_jogos.Controllers
         // MÉTODO 'ESTATISTICAS'
         public IActionResult Estatisticas()
         {
+            // ... (Este método não precisa de alterações)
             var viewModel = new EstatisticasViewModel
             {
                 LastGameFinished = "Nenhum jogo zerado registrado"
@@ -424,13 +282,8 @@ namespace catalogo_jogos.Controllers
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
-            // --- 1. QUERY: ÚLTIMO JOGO ZERADO ---
             var cmdLastGame = connection.CreateCommand();
-            cmdLastGame.CommandText = @"
-                SELECT Name, Year 
-                FROM Games 
-                WHERE IsLastFinished = 1 
-                LIMIT 1";
+            cmdLastGame.CommandText = @"SELECT Name, Year FROM Games WHERE IsLastFinished = 1 LIMIT 1";
             using (var reader = cmdLastGame.ExecuteReader())
             {
                 if (reader.Read())
@@ -439,20 +292,10 @@ namespace catalogo_jogos.Controllers
                 }
             }
 
-            // --- 2. QUERY: JOGO(S) ZERADO(S) MAIS VEZES ---
             var cmdMostFinished = connection.CreateCommand();
             cmdMostFinished.CommandText = @"
-                WITH GameCounts AS (
-                    SELECT Name, COUNT(*) AS Count
-                    FROM Games
-                    WHERE FinishedInThisYear = 1
-                    GROUP BY Name
-                )
-                SELECT Name, Count
-                FROM GameCounts
-                WHERE Count = (SELECT MAX(Count) FROM GameCounts)
-                ORDER BY Name;
-            ";
+                WITH GameCounts AS (SELECT Name, COUNT(*) AS Count FROM Games WHERE FinishedInThisYear = 1 GROUP BY Name)
+                SELECT Name, Count FROM GameCounts WHERE Count = (SELECT MAX(Count) FROM GameCounts) ORDER BY Name;";
             using (var reader = cmdMostFinished.ExecuteReader())
             {
                 while (reader.Read())
@@ -460,24 +303,12 @@ namespace catalogo_jogos.Controllers
                     viewModel.MostFinishedGame.Add($"{reader.GetString(0)} ({reader.GetInt32(1)} vezes)");
                 }
             }
-            if (viewModel.MostFinishedGame.Count == 0)
-            {
-                viewModel.MostFinishedGame.Add("N/A");
-            }
+            if (viewModel.MostFinishedGame.Count == 0) viewModel.MostFinishedGame.Add("N/A");
 
-            // --- 3. QUERY: JOGO(S) REGISTRADO(S) MAIS VEZES ---
             var cmdMostPlayed = connection.CreateCommand();
             cmdMostPlayed.CommandText = @"
-                WITH GameCounts AS (
-                    SELECT Name, COUNT(*) AS Count
-                    FROM Games
-                    GROUP BY Name
-                )
-                SELECT Name, Count
-                FROM GameCounts
-                WHERE Count = (SELECT MAX(Count) FROM GameCounts)
-                ORDER BY Name;
-            ";
+                WITH GameCounts AS (SELECT Name, COUNT(*) AS Count FROM Games GROUP BY Name)
+                SELECT Name, Count FROM GameCounts WHERE Count = (SELECT MAX(Count) FROM GameCounts) ORDER BY Name;";
             using (var reader = cmdMostPlayed.ExecuteReader())
             {
                 while (reader.Read())
@@ -485,10 +316,7 @@ namespace catalogo_jogos.Controllers
                     viewModel.MostPlayedGame.Add($"{reader.GetString(0)} ({reader.GetInt32(1)} registros)");
                 }
             }
-            if (viewModel.MostPlayedGame.Count == 0)
-            {
-                viewModel.MostPlayedGame.Add("N/A");
-            }
+            if (viewModel.MostPlayedGame.Count == 0) viewModel.MostPlayedGame.Add("N/A");
 
             return View(viewModel);
         }
@@ -496,77 +324,26 @@ namespace catalogo_jogos.Controllers
         // MÉTODO 'DETALHAR'
         public IActionResult Detalhar(int id)
         {
-            // Garante que as colunas existem
             using (var connectionCheck = new SqliteConnection(_connectionString))
             {
                 connectionCheck.Open();
                 try
                 {
                     var alterCommand = connectionCheck.CreateCommand();
-                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN CoverUrl TEXT DEFAULT ''";
-                    alterCommand.ExecuteNonQuery();
-                }
-                catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-
-                // --- SUBSTITUÍDO E AMPLIADO ---
-                try
-                {
-                    var alterCommand = connectionCheck.CreateCommand();
-                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN DlcUrl1 TEXT DEFAULT ''";
-                    alterCommand.ExecuteNonQuery();
-                }
-                catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-                try
-                {
-                    var alterCommand = connectionCheck.CreateCommand();
-                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN DlcUrl2 TEXT DEFAULT ''";
-                    alterCommand.ExecuteNonQuery();
-                }
-                catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-                try
-                {
-                    var alterCommand = connectionCheck.CreateCommand();
-                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN DlcUrl3 TEXT DEFAULT ''";
-                    alterCommand.ExecuteNonQuery();
-                }
-                catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-                try
-                {
-                    var alterCommand = connectionCheck.CreateCommand();
-                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN DlcUrl4 TEXT DEFAULT ''";
-                    alterCommand.ExecuteNonQuery();
-                }
-                catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-                // --- FIM DA MUDANÇA ---
-
-                try
-                {
-                    var alterCommand = connectionCheck.CreateCommand();
-                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN YoutubeUrl TEXT DEFAULT ''";
+                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Platinado INTEGER DEFAULT 0";
                     alterCommand.ExecuteNonQuery();
                 }
                 catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
             }
 
-
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
             var command = connection.CreateCommand();
-            // Mesma query da 'TelaEdicao'
             command.CommandText = @"
             SELECT Id, Name, Year, FinishedInThisYear, Grade,
-                   (SELECT MAX(g2.FinishedInThisYear) 
-                    FROM Games g2 
-                    WHERE g2.Name = Games.Name) AS EverCompleted,
-                   IsLastFinished,
-                   Ordem,
-                   CoverUrl,
-                   DlcUrl1, 
-                   DlcUrl2, 
-                   DlcUrl3, 
-                   DlcUrl4, 
-                   YoutubeUrl
+                   (SELECT MAX(g2.FinishedInThisYear) FROM Games g2 WHERE g2.Name = Games.Name) AS EverCompleted,
+                   IsLastFinished, Ordem, CoverUrl, DlcUrl1, DlcUrl2, DlcUrl3, DlcUrl4, YoutubeUrl, Platinado
             FROM Games
             WHERE Id = $id";
 
@@ -586,13 +363,12 @@ namespace catalogo_jogos.Controllers
                     IsLastFinished = reader.GetBoolean(6),
                     Ordem = reader.GetInt32(7),
                     CoverUrl = reader.GetString(8),
-                    // --- SUBSTITUÍDO E AMPLIADO ---
                     DlcUrl1 = reader.GetString(9),
                     DlcUrl2 = reader.GetString(10),
                     DlcUrl3 = reader.GetString(11),
                     DlcUrl4 = reader.GetString(12),
-                    // --- FIM DA MUDANÇA ---
-                    YoutubeUrl = reader.GetString(13)
+                    YoutubeUrl = reader.GetString(13),
+                    Platinado = reader.GetBoolean(14)
                 };
                 return View(jogo);
             }
@@ -604,6 +380,7 @@ namespace catalogo_jogos.Controllers
         [HttpPost]
         public IActionResult SalvarOrdemLote(Dictionary<int, int> ordemValores)
         {
+            // ... (Este método não precisa de alterações)
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
             using var transaction = connection.BeginTransaction();
@@ -634,11 +411,10 @@ namespace catalogo_jogos.Controllers
 
 
         // MÉTODO 'LISTAJOGOS'
-        public IActionResult ListaJogos(string termoBusca, string sortOrder, int? filtroAno, bool? filtroNaoZerados)
+        public IActionResult ListaJogos(string termoBusca, string sortOrder, int? filtroAno, bool? filtroNaoZerados, bool? filtroPlatinados)
         {
             var listaJogos = new List<Jogo>();
 
-            // --- ETAPA 1: Buscar todos os anos únicos para os botões ---
             var distinctYears = new List<int>();
             using (var connectionYears = new SqliteConnection(_connectionString))
             {
@@ -655,104 +431,78 @@ namespace catalogo_jogos.Controllers
             }
             ViewData["DistinctYears"] = distinctYears;
 
-
-            // --- ETAPA 2: Garantir que a coluna Ordem exista ---
             using (var connectionCheck = new SqliteConnection(_connectionString))
             {
                 connectionCheck.Open();
                 try
                 {
                     var alterCommand = connectionCheck.CreateCommand();
-                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Ordem INTEGER DEFAULT 0";
+                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Platinado INTEGER DEFAULT 0";
                     alterCommand.ExecuteNonQuery();
                 }
                 catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
             }
 
-
-            // --- ETAPA 3: Montar a Query Principal ---
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
             var command = connection.CreateCommand();
             var whereClauses = new List<string>();
 
-            // 1. Iniciar a query base com o CTE
             string sql = @"
                 WITH AllGamesWithCompletion AS (
-                    SELECT Id, Name, Year, FinishedInThisYear, Grade, Ordem,
+                    SELECT Id, Name, Year, FinishedInThisYear, Grade, Ordem, Platinado,
                            MAX(CASE WHEN FinishedInThisYear = 1 OR FinishedInThisYear = 'true' THEN 1 ELSE 0 END) OVER (PARTITION BY Name) AS EverCompleted
                     FROM Games
                 )
-                SELECT Id, Name, Year, FinishedInThisYear, Grade, EverCompleted, Ordem
+                SELECT Id, Name, Year, FinishedInThisYear, Grade, EverCompleted, Ordem, Platinado
                 FROM AllGamesWithCompletion";
 
-            // 2. Adicionar o filtro de BUSCA (termoBusca)
             if (!string.IsNullOrEmpty(termoBusca))
             {
-                var searchClauses = new List<string>
-                {
-                    "Name LIKE $termoBusca",
-                    "CAST(Year AS TEXT) LIKE $termoBusca",
-                    "Grade LIKE $termoBusca"
-                };
+                var searchClauses = new List<string> { "Name LIKE $termoBusca", "CAST(Year AS TEXT) LIKE $termoBusca", "Grade LIKE $termoBusca" };
                 command.Parameters.AddWithValue("$termoBusca", $"%{termoBusca}%");
-
                 string termoLimpo = termoBusca.Trim();
-                if (termoLimpo.Equals("sim", StringComparison.OrdinalIgnoreCase))
-                {
-                    searchClauses.Add("FinishedInThisYear = 1");
-                }
-                else if (termoLimpo.Equals("não", StringComparison.OrdinalIgnoreCase) ||
-                         termoLimpo.Equals("nao", StringComparison.OrdinalIgnoreCase))
-                {
-                    searchClauses.Add("FinishedInThisYear = 0");
-                }
-
+                if (termoLimpo.Equals("sim", StringComparison.OrdinalIgnoreCase)) searchClauses.Add("FinishedInThisYear = 1");
+                else if (termoLimpo.Equals("não", StringComparison.OrdinalIgnoreCase) || termoLimpo.Equals("nao", StringComparison.OrdinalIgnoreCase)) searchClauses.Add("FinishedInThisYear = 0");
                 whereClauses.Add($"({string.Join(" OR ", searchClauses)})");
             }
 
-            // 3. Adicionar o filtro de ANO (filtroAno)
             if (filtroAno.HasValue)
             {
                 whereClauses.Add("Year = $filtroAno");
                 command.Parameters.AddWithValue("$filtroAno", filtroAno.Value);
             }
 
-            // 4. ADICIONAR O FILTRO DE 'NUNCA ZERADOS' (filtroNaoZerados)
             if (filtroNaoZerados == true)
             {
-                // A coluna 'EverCompleted' é 0 (false) ou 1 (true)
                 whereClauses.Add("EverCompleted = 0");
             }
 
-            // 5. Juntar todos os filtros com "AND"
+            if (filtroPlatinados == true)
+            {
+                whereClauses.Add("Platinado = 1");
+            }
+
             if (whereClauses.Count > 0)
             {
                 sql += $" WHERE {string.Join(" AND ", whereClauses)}";
             }
 
-            // 6. Adicionar a ordenação
             switch (sortOrder)
             {
-                case "name":
-                    sql += " ORDER BY Name";
-                    break;
-                case "year":
-                default:
-                    sql += " ORDER BY Year, Ordem";
-                    break;
+                case "name": sql += " ORDER BY Name"; break;
+                case "year": default: sql += " ORDER BY Year, Ordem"; break;
             }
 
             command.CommandText = sql;
 
-            // 7. Passar os filtros atuais de volta para a View
             ViewData["CurrentFilter"] = termoBusca;
             ViewData["CurrentYearFilter"] = filtroAno;
             ViewData["CurrentSortOrder"] = sortOrder;
             ViewData["CurrentNaoZeradosFilter"] = filtroNaoZerados;
+            ViewData["CurrentPlatinadosFilter"] = filtroPlatinados;
 
-            // 8. Executar a query
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -764,7 +514,8 @@ namespace catalogo_jogos.Controllers
                     FinishedInThisYear = reader.GetBoolean(3),
                     Grade = reader.GetString(4),
                     EverCompleted = reader.GetBoolean(5),
-                    Ordem = reader.GetInt32(6)
+                    Ordem = reader.GetInt32(6),
+                    Platinado = reader.GetBoolean(7)
                 });
             }
 

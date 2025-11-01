@@ -10,6 +10,7 @@
     var currentYearFilter = ViewData["CurrentYearFilter"] as int?;
     var currentSortOrder = ViewData["CurrentSortOrder"] as string;
     var currentNaoZeradosFilter = ViewData["CurrentNaoZeradosFilter"] as bool?;
+    var currentPlatinadosFilter = ViewData["CurrentPlatinadosFilter"] as bool?;
 }
 
 <div class="container mt-5">
@@ -31,16 +32,12 @@
                asp-route-filtroAno="@currentYearFilter"
                asp-route-sortOrder="@currentSortOrder"
                asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
-               class="btn btn-primary me-2">
-                Ver Estatísticas
-            </a>
+               class="btn btn-primary me-2">Ver Estatísticas</a>
 
             <a asp-action="ListaJogos" class="btn btn-outline-secondary me-2">Resetar</a>
         </form>
 
-        <button type="submit" class="btn btn-success" form="formSalvarOrdem">
-            Salvar Ordem
-        </button>
+        <button type="submit" class="btn btn-success" form="formSalvarOrdem">Salvar Ordem</button>
     </div>
 
     <hr />
@@ -52,10 +49,9 @@
            asp-route-termoBusca="@currentFilter"
            asp-route-filtroAno="@currentYearFilter"
            asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
-           class="btn btn-sm btn-light border">
-            Ordem Alfabética (A-Z)
-        </a>
+           class="btn btn-sm btn-light border">Ordem Alfabética (A-Z)</a>
     </div>
+
     <div class="mb-3">
         <strong>Filtrar por Ano:</strong>
         @foreach (var year in distinctYears)
@@ -68,11 +64,10 @@
                asp-route-termoBusca="@currentFilter"
                asp-route-sortOrder="@currentSortOrder"
                asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
-               class="btn btn-sm @btnClass">
-                @year
-            </a>
+               class="btn btn-sm @btnClass">@year</a>
         }
     </div>
+
     <div class="mb-3">
         <strong>Outros Filtros:</strong>
         @{
@@ -84,8 +79,20 @@
            asp-route-filtroAno="@currentYearFilter"
            asp-route-termoBusca="@currentFilter"
            asp-route-sortOrder="@currentSortOrder"
-           class="btn btn-sm @btnClassNuncaZerados">
-            Jogos Nunca Zerados
+           class="btn btn-sm @btnClassNuncaZerados">Jogos Nunca Zerados</a>
+
+        @{
+            var btnClassPlatinados = (currentPlatinadosFilter == true) ? "btn-primary" : "btn-light border";
+            var filtroPlatinadosParaEsteBotao = (currentPlatinadosFilter == true) ? (bool?)null : true;
+        }
+        <a asp-action="ListaJogos"
+           asp-route-filtroPlatinados="@filtroPlatinadosParaEsteBotao"
+           asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
+           asp-route-filtroAno="@currentYearFilter"
+           asp-route-termoBusca="@currentFilter"
+           asp-route-sortOrder="@currentSortOrder"
+           class="btn btn-sm @btnClassPlatinados">
+            Jogos Platinados
         </a>
     </div>
 
@@ -98,9 +105,7 @@
     {
         @if (TempData["Mensagem"] != null)
         {
-            <div class="alert alert-success text-center">
-                @TempData["Mensagem"]
-            </div>
+            <div class="alert alert-success text-center">@TempData["Mensagem"]</div>
         }
 
         <form asp-action="SalvarOrdemLote" method="post" id="formSalvarOrdem">
@@ -108,14 +113,15 @@
             <table class="table table-bordered table-striped">
                 <thead class="table-light">
                     <tr>
-                        <th>ID</th>
-                        <th>Nome</th>
-                        <th style="white-space: nowrap;">Ano Que Foi Jogado</th>
+                        <th style="white-space: nowrap;">ID</th>
+                        <th style="white-space: nowrap;">Nome</th>
+                        <th style="white-space: nowrap;">Ano Que Foi Finalizado</th>
                         <th style="white-space: nowrap;">Finalizado Esse Ano?</th>
                         <th style="white-space: nowrap;">Nota</th>
                         <th style="white-space: nowrap;">Já Zerado Alguma Vez?</th>
-                        <th style="width: 100px;">Ordem</th>
-                        <th>Ações</th>
+                        <th style="white-space: nowrap;">Platinado Nesse Ano?</th>
+                        <th style="white-space: nowrap;">Ordem</th>
+                        <th style="white-space: nowrap;">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -123,20 +129,21 @@
                     {
                         <tr>
                             <td>@r.Id</td>
-                            <td>@r.Name</td>
+                            <td style="white-space: nowrap;">@r.Name</td>
                             <td>@r.Year</td>
                             <td style="white-space: nowrap;">@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.FinishedInThisYear)</td>
                             <td style="white-space: nowrap;">@r.Grade</td>
                             <td style="white-space: nowrap;">@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.EverCompleted)</td>
+                            <td style="white-space: nowrap;">@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.Platinado)</td>
 
-                            <td>
+                            <td style="width: 100px;">
                                 <input type="number"
                                        class="form-control form-control-sm"
                                        value="@r.Ordem"
                                        name="ordemValores[@r.Id]" />
                             </td>
 
-                            <td>
+                            <td style="width: 210px;">
                                 <div class="btn-group" role="group">
                                     <a asp-action="TelaEdicao" asp-route-id="@r.Id"
                                        asp-route-termoBusca="@currentFilter"

@@ -3,7 +3,6 @@
     ViewData["Title"] = "Editar Jogo";
     int currentYear = DateTime.Now.Year;
 
-    // LÊ OS FILTROS QUE A 'LISTAJOGOS' ENVIOU PELA URL
     var termoBusca = Context.Request.Query["termoBusca"];
     var sortOrder = Context.Request.Query["sortOrder"];
     var filtroAno = Context.Request.Query["filtroAno"];
@@ -68,7 +67,6 @@
                 <input type="text" class="form-control" asp-for="CoverUrl" placeholder="http://..." />
             </div>
         </div>
-
         <div class="mb-3 row">
             <label class="col-sm-5 col-form-label" asp-for="DlcUrl1">URL Foto DLC 1:</label>
             <div class="col-sm-7">
@@ -117,6 +115,15 @@
             </div>
         </div>
 
+        <div class="mb-3 row">
+            <label class="col-sm-5 col-form-label text-sm-end" asp-for="Platinado">Platinado?:</label>
+            <div class="col-sm-7">
+                <div class="form-check pt-2">
+                    <input asp-for="Platinado" type="checkbox" class="form-check-input" value="true" />
+                </div>
+            </div>
+        </div>
+
         <div class="d-grid gap-2">
             <button type="submit" class="btn btn-primary">Salvar Alterações</button>
             <a asp-action="Detalhar"
@@ -133,7 +140,6 @@
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // ... (todo o seu JS dos checkboxes continua aqui, sem mudança) ...
             var yearSelect = document.getElementById('selectYear');
             var lastFinishedContainer = document.getElementById('lastFinishedContainer');
             var currentYear = @currentYear;

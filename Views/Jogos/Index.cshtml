@@ -4,13 +4,6 @@
     int currentYear = DateTime.Now.Year;
 }
 
-<style>
-    html, body {
-        height: 100vh;
-        overflow: hidden; /* impede scroll vertical e horizontal */
-    }
-</style>
-
 <div class="container mt-5" style="max-width: 500px;">
     <h3 class="mb-4 text-center">Catálogo de Jogos</h3>
 
@@ -22,7 +15,6 @@
                 <input type="text" class="form-control" placeholder="Ex: Resident Evil" asp-for="Name" />
             </div>
         </div>
-
         <div class="mb-3 row">
             <label class="col-sm-5 col-form-label" asp-for="Year">Ano Que Foi Jogado:</label>
             <div class="col-sm-7">
@@ -41,7 +33,6 @@
                 </select>
             </div>
         </div>
-
         <div class="mb-4 row">
             <label class="col-sm-5 col-form-label" asp-for="Grade">Nota:</label>
             <div class="col-sm-7">
@@ -67,12 +58,20 @@
                 </div>
             </div>
         </div>
-
         <div class="mb-3 row" id="lastFinishedContainer" style="display: none;">
             <label class="col-sm-5 col-form-label" asp-for="IsLastFinished">Este foi o último que zerei?</label>
             <div class="col-sm-7">
                 <div class="form-check pt-2">
                     <input asp-for="IsLastFinished" type="checkbox" class="form-check-input" value="true" id="lastFinishedCheckbox" />
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3 row">
+            <label class="col-sm-5 col-form-label" asp-for="Platinado">Platinado?:</label>
+            <div class="col-sm-7">
+                <div class="form-check pt-2">
+                    <input asp-for="Platinado" type="checkbox" class="form-check-input" value="true" />
                 </div>
             </div>
         </div>
@@ -95,12 +94,9 @@
             var yearSelect = document.getElementById('selectYear');
             var lastFinishedContainer = document.getElementById('lastFinishedContainer');
             var currentYear = @currentYear;
-
-            // --- IDs DOS CHECKBOXES ---
             var finishedCheck = document.getElementById('finishedCheckbox');
             var lastFinishedCheck = document.getElementById('lastFinishedCheckbox');
 
-            // Lógica para mostrar/esconder o container
             function toggleLastFinishedCheckbox() {
                 if (parseInt(yearSelect.value) === currentYear) {
                     lastFinishedContainer.style.display = 'flex';
@@ -112,8 +108,6 @@
             toggleLastFinishedCheckbox();
             yearSelect.addEventListener('change', toggleLastFinishedCheckbox);
 
-
-            // --- LÓGICA DOS CHECKBOXES ---
             lastFinishedCheck.addEventListener('change', function() {
                 if (lastFinishedCheck.checked) {
                     finishedCheck.checked = true;
