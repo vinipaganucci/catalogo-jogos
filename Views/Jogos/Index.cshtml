@@ -19,7 +19,7 @@
             <label class="col-sm-5 col-form-label" asp-for="Year">Ano Que Foi Jogado:</label>
             <div class="col-sm-7">
                 <select asp-for="Year" id="selectYear" class="form-select">
-                    @for (int year = currentYear + 1; year >= 2010; year--)
+                    @for (int year = currentYear + 1; year >= 2002; year--)
                     {
                         if (year == currentYear)
                         {
