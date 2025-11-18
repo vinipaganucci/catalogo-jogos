@@ -2,20 +2,57 @@
 @{
     ViewData["Title"] = @Model.Name;
 
-    // ... (Lógica de URL do Youtube, DLCs, Filtros e Cor da Nota não muda) ...
+    // --- LÓGICA PARA CONVERTER O LINK DO YOUTUBE ---
     string videoEmbedUrl = null;
     if (!string.IsNullOrEmpty(Model.YoutubeUrl))
     {
-        if (Model.YoutubeUrl.Contains("watch?v=")) videoEmbedUrl = Model.YoutubeUrl.Replace("watch?v=", "embed/");
-        else if (Model.YoutubeUrl.Contains("youtu.be/")) videoEmbedUrl = Model.YoutubeUrl.Replace("youtu.be/", "www.youtube.com/embed/");
-        else if (Model.YoutubeUrl.Contains("/embed/")) videoEmbedUrl = Model.YoutubeUrl;
+        string videoId = null;
+        if (Model.YoutubeUrl.Contains("watch?v="))
+        {
+            // Extrai o ID de uma URL padrão (ex: ...watch?v=VIDEO_ID)
+            var uri = new Uri(Model.YoutubeUrl);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            videoId = query["v"];
+        }
+        else if (Model.YoutubeUrl.Contains("youtu.be/"))
+        {
+            // Extrai o ID de uma URL curta (ex: ...youtu.be/VIDEO_ID)
+            var uri = new Uri(Model.YoutubeUrl);
+            videoId = uri.Segments.Last();
+        }
+        else if (Model.YoutubeUrl.Contains("/embed/"))
+        {
+            // Extrai o ID de uma URL de embed (ex: .../embed/VIDEO_ID)
+            var uri = new Uri(Model.YoutubeUrl);
+            videoId = uri.Segments.Last();
+        }
+
+        // =======================================
+        // --- MUDANÇA PARA O AUTOPLAY ---
+        // =======================================
+        if (videoId != null)
+        {
+            // Monta a URL final com os parâmetros de autoplay e mudo
+            videoEmbedUrl = $"https://www.youtube.com/embed/{videoId}?autoplay=1&mute=1&rel=0";
+        }
     }
-    bool hasDlcs = !string.IsNullOrEmpty(Model.DlcUrl1) || !string.IsNullOrEmpty(Model.DlcUrl2) || !string.IsNullOrEmpty(Model.DlcUrl3) || !string.IsNullOrEmpty(Model.DlcUrl4);
+    // --- FIM DA LÓGICA ---
+
+    // Lógica das DLCs
+    bool hasDlcs = !string.IsNullOrEmpty(Model.DlcUrl1) ||
+                   !string.IsNullOrEmpty(Model.DlcUrl2) ||
+                   !string.IsNullOrEmpty(Model.DlcUrl3) ||
+                   !string.IsNullOrEmpty(Model.DlcUrl4);
+
     bool hasMedia = !string.IsNullOrEmpty(videoEmbedUrl) || hasDlcs;
+
+    // Lógica dos Filtros
     var termoBusca = Context.Request.Query["termoBusca"];
     var sortOrder = Context.Request.Query["sortOrder"];
     var filtroAno = Context.Request.Query["filtroAno"];
     var filtroNaoZerados = Context.Request.Query["filtroNaoZerados"];
+
+    // Lógica da Cor da Nota
     string badgeColor;
     switch (Model.Grade)
     {
@@ -144,7 +181,7 @@
                         }
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center info-card">
-                        Platinado nesse ano?
+                        Platinado?
                         @if (Model.Platinado)
                         {
                             <span class="fw-bold">Sim</span>
@@ -173,7 +210,11 @@
                         {
                             <h5 class="mb-3">Gameplay</h5>
                             <div class="video-wrapper">
-                                <iframe src="@videoEmbedUrl" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                <iframe src="@videoEmbedUrl"
+                                        frameborder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowfullscreen>
+                                </iframe>
                             </div>
                         }
 
@@ -208,8 +249,23 @@
 
     <div class="row mt-4">
         <div class="col-12 text-center">
-            <a asp-action="TelaEdicao" asp-route-id="@Model.Id" asp-route-termoBusca="@termoBusca" asp-route-sortOrder="@sortOrder" asp-route-filtroAno="@filtroAno" asp-route-filtroNaoZerados="@filtroNaoZerados" class="btn btn-warning btn-lg px-5 me-2">Editar</a>
-            <a asp-action="ListaJogos" asp-route-termoBusca="@termoBusca" asp-route-sortOrder="@sortOrder" asp-route-filtroAno="@filtroAno" asp-route-filtroNaoZerados="@filtroNaoZerados" class="btn btn-secondary btn-lg px-5">Voltar para a Lista</a>
+            <a asp-action="TelaEdicao" asp-route-id="@Model.Id"
+               asp-route-termoBusca="@termoBusca"
+               asp-route-sortOrder="@sortOrder"
+               asp-route-filtroAno="@filtroAno"
+               asp-route-filtroNaoZerados="@filtroNaoZerados"
+               class="btn btn-warning btn-lg px-5 me-2">
+                Editar
+            </a>
+
+            <a asp-action="ListaJogos"
+               asp-route-termoBusca="@termoBusca"
+               asp-route-sortOrder="@sortOrder"
+               asp-route-filtroAno="@filtroAno"
+               asp-route-filtroNaoZerados="@filtroNaoZerados"
+               class="btn btn-secondary btn-lg px-5">
+                Voltar para a Lista
+            </a>
         </div>
     </div>
 
