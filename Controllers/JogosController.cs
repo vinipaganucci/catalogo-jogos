@@ -4,6 +4,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
 using System.Diagnostics;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace catalogo_jogos.Controllers
 {
@@ -273,6 +274,11 @@ namespace catalogo_jogos.Controllers
         // MÉTODO 'ESTATISTICAS'
         public IActionResult Estatisticas()
         {
+
+            int quantidadeJogosZerados = ConsultarQuantidadeDeJogosZerados();
+
+            ViewBag.QuantidadeJogosZerados = quantidadeJogosZerados;
+
             // ... (Este método não precisa de alterações)
             var viewModel = new EstatisticasViewModel
             {
@@ -520,6 +526,22 @@ namespace catalogo_jogos.Controllers
             }
 
             return View(listaJogos);
+        }
+
+        public int ConsultarQuantidadeDeJogosZerados()
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            var createCommand = connection.CreateCommand();
+            createCommand.CommandText = @"
+                SELECT COUNT (DISTINCT Name) FROM Games Where FinishedInThisYear = 1;
+                ";
+
+            var resultado = createCommand.ExecuteScalar();
+            int quantidade = Convert.ToInt32(resultado);
+
+            return quantidade;
         }
 
     }
