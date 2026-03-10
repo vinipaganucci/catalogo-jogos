@@ -4,88 +4,125 @@
     int currentYear = DateTime.Now.Year;
 }
 
-<div class="container mt-5" style="max-width: 500px;">
-    <h3 class="mb-4 text-center">Catálogo de Jogos</h3>
+<style>
+    /* Bloqueia o scroll e define o fundo escuro */
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #121212;
+    }
 
-    <form asp-action="SaveGame" method="post">
+    /* Container posicionado no topo da área útil */
+    .viewport-top {
+        min-height: calc(100vh - 56px); /* Altura da tela menos a navbar */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start; /* Move o conteúdo para o topo */
+        align-items: center;
+        padding-top: 30px; /* Pequeno recuo do topo para não colar na linha branca */
+    }
 
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="Name">Título:</label>
-            <div class="col-sm-7">
-                <input type="text" class="form-control" placeholder="Ex: Resident Evil" asp-for="Name" />
+    .form-card {
+        width: 100%;
+        max-width: 500px;
+        padding: 0 20px;
+    }
+
+    /* Cores dos textos e títulos */
+    label, h3 {
+        color: white;
+    }
+</style>
+
+<div class="viewport-top">
+    <div class="form-card">
+        <h3 class="mb-4 text-center">Catálogo de Jogos</h3>
+
+        <form asp-action="SaveGame" method="post">
+
+            <div class="mb-3 row">
+                <label class="col-sm-5 col-form-label" asp-for="Name">Título:</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" placeholder="Ex: Resident Evil" asp-for="Name" />
+                </div>
             </div>
-        </div>
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="Year">Ano Que Foi Jogado:</label>
-            <div class="col-sm-7">
-                <select asp-for="Year" id="selectYear" class="form-select">
-                    @for (int year = currentYear + 1; year >= 2002; year--)
-                    {
-                        if (year == currentYear)
+
+            <div class="mb-3 row">
+                <label class="col-sm-5 col-form-label" asp-for="Year">Ano Que Foi Jogado:</label>
+                <div class="col-sm-7">
+                    <select asp-for="Year" id="selectYear" class="form-select">
+                        @for (int year = currentYear + 1; year >= 2002; year--)
                         {
-                            <option value="@year" selected>@year</option>
+                            if (year == currentYear)
+                            {
+                                <option value="@year" selected>@year</option>
+                            }
+                            else
+                            {
+                                <option value="@year">@year</option>
+                            }
                         }
-                        else
-                        {
-                            <option value="@year">@year</option>
-                        }
-                    }
-                </select>
-            </div>
-        </div>
-        <div class="mb-4 row">
-            <label class="col-sm-5 col-form-label" asp-for="Grade">Nota:</label>
-            <div class="col-sm-7">
-                <select class="form-select" asp-for="Grade">
-                    <option selected disabled value="">Selecione uma nota</option>
-                    <option value="Obra-Prima">Obra-Prima</option>
-                    <option value="Excelente">Excelente</option>
-                    <option value="Muito Bom">Muito Bom</option>
-                    <option value="Bom">Bom</option>
-                    <option value="Mediano">Mediano</option>
-                    <option value="Ruim">Ruim</option>
-                    <option value="Péssimo">Péssimo</option>
-                    <option value="Lixo Podre">Lixo Podre</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="FinishedInThisYear">Zerado Nesse Ano?:</label>
-            <div class="col-sm-7">
-                <div class="form-check pt-2">
-                    <input asp-for="FinishedInThisYear" type="checkbox" class="form-check-input" value="true" id="finishedCheckbox" />
+                    </select>
                 </div>
             </div>
-        </div>
-        <div class="mb-3 row" id="lastFinishedContainer" style="display: none;">
-            <label class="col-sm-5 col-form-label" asp-for="IsLastFinished">Este foi o último que zerei?</label>
-            <div class="col-sm-7">
-                <div class="form-check pt-2">
-                    <input asp-for="IsLastFinished" type="checkbox" class="form-check-input" value="true" id="lastFinishedCheckbox" />
+
+            <div class="mb-4 row">
+                <label class="col-sm-5 col-form-label" asp-for="Grade">Nota:</label>
+                <div class="col-sm-7">
+                    <select class="form-select" asp-for="Grade">
+                        <option selected disabled value="">Selecione uma nota</option>
+                        <option value="Obra-Prima">Obra-Prima</option>
+                        <option value="Excelente">Excelente</option>
+                        <option value="Muito Bom">Muito Bom</option>
+                        <option value="Bom">Bom</option>
+                        <option value="Mediano">Mediano</option>
+                        <option value="Ruim">Ruim</option>
+                        <option value="Péssimo">Péssimo</option>
+                        <option value="Lixo Podre">Lixo Podre</option>
+                    </select>
                 </div>
             </div>
-        </div>
 
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="Platinado">Platinado?:</label>
-            <div class="col-sm-7">
-                <div class="form-check pt-2">
-                    <input asp-for="Platinado" type="checkbox" class="form-check-input" value="true" />
+            <div class="mb-3 row">
+                <label class="col-sm-5 col-form-label" asp-for="FinishedInThisYear">Zerado Nesse Ano?:</label>
+                <div class="col-sm-7">
+                    <div class="form-check pt-2">
+                        <input asp-for="FinishedInThisYear" type="checkbox" class="form-check-input" value="true" id="finishedCheckbox" />
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-primary">Salvar</button>
-            <a asp-action="ListaJogos" class="btn btn-primary">Lista de Jogos</a>
-        </div>
+            <div class="mb-3 row" id="lastFinishedContainer" style="display: none;">
+                <label class="col-sm-5 col-form-label" asp-for="IsLastFinished">Este foi o último que zerei?</label>
+                <div class="col-sm-7">
+                    <div class="form-check pt-2">
+                        <input asp-for="IsLastFinished" type="checkbox" class="form-check-input" value="true" id="lastFinishedCheckbox" />
+                    </div>
+                </div>
+            </div>
 
-        @if (ViewBag.Mensagem != null)
-        {
-            <div class="alert alert-success mt-3">@ViewBag.Mensagem</div>
-        }
-    </form>
+            <div class="mb-3 row">
+                <label class="col-sm-5 col-form-label" asp-for="Platinado">Platinado?:</label>
+                <div class="col-sm-7">
+                    <div class="form-check pt-2">
+                        <input asp-for="Platinado" type="checkbox" class="form-check-input" value="true" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+                <a asp-action="ListaJogos" class="btn btn-primary">Lista de Jogos</a>
+            </div>
+
+            @if (ViewBag.Mensagem != null)
+            {
+                <div class="alert alert-success mt-3 text-center">@ViewBag.Mensagem</div>
+            }
+        </form>
+    </div>
 </div>
 
 @section Scripts {
