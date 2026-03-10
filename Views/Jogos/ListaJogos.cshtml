@@ -4,164 +4,166 @@
 @{
     ViewData["Title"] = "Registros Salvos";
 
-    // Pega os dados que o Controller enviou
     var distinctYears = ViewData["DistinctYears"] as List<int> ?? new List<int>();
     var currentFilter = ViewData["CurrentFilter"] as string;
     var currentYearFilter = ViewData["CurrentYearFilter"] as int?;
     var currentSortOrder = ViewData["CurrentSortOrder"] as string;
     var currentNaoZeradosFilter = ViewData["CurrentNaoZeradosFilter"] as bool?;
     var currentPlatinadosFilter = ViewData["CurrentPlatinadosFilter"] as bool?;
+    var currentUnicos = ViewData["CurrentUnicos"] as bool?;
 }
 
-<div class="container mt-5">
+<style>
+    .table th {
+        font-size: 0.85rem;
+        vertical-align: middle;
+        text-align: center;
+        background-color: #f8f9fa;
+    }
+
+    .table td {
+        font-size: 0.9rem;
+        vertical-align: middle;
+    }
+
+    .col-nome {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .col-acoes {
+        width: 190px;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    .col-ordem {
+        width: 70px;
+    }
+</style>
+
+<div class="container-fluid px-4 mt-5">
     <h3 class="mb-4 text-center">@ViewData["Title"]</h3>
 
-    <div class="mb-3 d-flex align-items-center justify-content-between">
-        <form method="get" asp-action="ListaJogos" class="d-flex align-items-center">
+    <div class="mb-3 d-flex align-items-center justify-content-between flex-wrap">
+        @* FORMULÁRIO DE BUSCA: Agora mantém filtros de Ano e Únicos *@
+        <form method="get" asp-action="ListaJogos" class="d-flex align-items-center mb-2">
             <label class="me-2">Buscar:</label>
-            <input type="text"
-                   name="termoBusca"
-                   class="form-control me-2"
-                   style="width: 200px;"
-                   placeholder="Nome, ano ou nota..."
-                   value="@currentFilter" />
+            <input type="text" name="termoBusca" class="form-control me-2" style="width: 180px;"
+                   placeholder="Nome..." value="@currentFilter" />
+
+            @* Inputs escondidos para não perder os filtros ao clicar em "Buscar" *@
+            <input type="hidden" name="unicos" value="@(currentUnicos == true ? "true" : "")" />
+            <input type="hidden" name="filtroAno" value="@currentYearFilter" />
+            <input type="hidden" name="filtroNaoZerados" value="@(currentNaoZeradosFilter == true ? "true" : "")" />
+            <input type="hidden" name="filtroPlatinados" value="@(currentPlatinadosFilter == true ? "true" : "")" />
+
             <button type="submit" class="btn btn-primary me-2">Buscar</button>
-
-            <a asp-controller="Jogos" asp-action="Estatisticas"
-               asp-route-termoBusca="@currentFilter"
-               asp-route-filtroAno="@currentYearFilter"
-               asp-route-sortOrder="@currentSortOrder"
-               asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
-               class="btn btn-primary me-2">Ver Estatísticas</a>
-
-            <a asp-action="ListaJogos" class="btn btn-outline-secondary me-2">Resetar</a>
+            <a asp-controller="Jogos" asp-action="Estatisticas" class="btn btn-primary me-2">Ver Estatísticas</a>
+            <a asp-action="ListaJogos" class="btn btn-outline-secondary">Resetar</a>
         </form>
 
-        <button type="submit" class="btn btn-success" form="formSalvarOrdem">Salvar Ordem</button>
+        <button type="submit" class="btn btn-success mb-2" form="formSalvarOrdem">Salvar Ordem</button>
     </div>
 
     <hr />
 
     <div class="mb-3">
-        <strong>Ordenar por:</strong>
+        <strong>Ordenar:</strong>
         <a asp-action="ListaJogos"
            asp-route-sortOrder="name"
            asp-route-termoBusca="@currentFilter"
            asp-route-filtroAno="@currentYearFilter"
-           asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
-           class="btn btn-sm btn-light border">Ordem Alfabética (A-Z)</a>
-    </div>
+           asp-route-unicos="@currentUnicos"
+           class="btn btn-sm btn-light border">A-Z</a>
 
-    <div class="mb-3">
-        <strong>Filtrar por Ano:</strong>
+        <span class="ms-3"><strong>Anos:</strong></span>
         @foreach (var year in distinctYears)
         {
             var btnClass = (year == currentYearFilter) ? "btn-primary" : "btn-light border";
-            var filtroAnoParaEsteBotao = (year == currentYearFilter) ? (int?)null : year;
-
             <a asp-action="ListaJogos"
-               asp-route-filtroAno="@filtroAnoParaEsteBotao"
+               asp-route-filtroAno="@(year == currentYearFilter ? null : year)"
                asp-route-termoBusca="@currentFilter"
-               asp-route-sortOrder="@currentSortOrder"
+               asp-route-unicos="@currentUnicos"
                asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
                class="btn btn-sm @btnClass">@year</a>
         }
     </div>
 
     <div class="mb-3">
-        <strong>Outros Filtros:</strong>
-        @{
-            var btnClassNuncaZerados = (currentNaoZeradosFilter == true) ? "btn-primary" : "btn-light border";
-            var filtroNaoZeradosParaEsteBotao = (currentNaoZeradosFilter == true) ? (bool?)null : true;
-        }
+        <strong>Filtros:</strong>
+        @* BOTÃO ÚNICOS: Agora carrega a busca e o ano atual *@
         <a asp-action="ListaJogos"
-           asp-route-filtroNaoZerados="@filtroNaoZeradosParaEsteBotao"
-           asp-route-filtroAno="@currentYearFilter"
+           asp-route-unicos="@(currentUnicos == true ? null : true)"
            asp-route-termoBusca="@currentFilter"
-           asp-route-sortOrder="@currentSortOrder"
-           class="btn btn-sm @btnClassNuncaZerados">Jogos Nunca Zerados</a>
-
-        @{
-            var btnClassPlatinados = (currentPlatinadosFilter == true) ? "btn-primary" : "btn-light border";
-            var filtroPlatinadosParaEsteBotao = (currentPlatinadosFilter == true) ? (bool?)null : true;
-        }
-        <a asp-action="ListaJogos"
-           asp-route-filtroPlatinados="@filtroPlatinadosParaEsteBotao"
+           asp-route-filtroAno="@currentYearFilter"
            asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
-           asp-route-filtroAno="@currentYearFilter"
+           asp-route-filtroPlatinados="@currentPlatinadosFilter"
+           class="btn btn-sm @(currentUnicos == true ? "btn-primary" : "btn-light border")">Únicos</a>
+
+        <a asp-action="ListaJogos"
+           asp-route-filtroNaoZerados="@(currentNaoZeradosFilter == true ? null : true)"
            asp-route-termoBusca="@currentFilter"
-           asp-route-sortOrder="@currentSortOrder"
-           class="btn btn-sm @btnClassPlatinados">
-            Jogos Platinados
-        </a>
+           asp-route-filtroAno="@currentYearFilter"
+           asp-route-unicos="@currentUnicos"
+           class="btn btn-sm @(currentNaoZeradosFilter == true ? "btn-primary" : "btn-light border")">Nunca Zerados</a>
+
+        <a asp-action="ListaJogos"
+           asp-route-filtroPlatinados="@(currentPlatinadosFilter == true ? null : true)"
+           asp-route-termoBusca="@currentFilter"
+           asp-route-filtroAno="@currentYearFilter"
+           asp-route-unicos="@currentUnicos"
+           class="btn btn-sm @(currentPlatinadosFilter == true ? "btn-primary" : "btn-light border")">Platinados</a>
     </div>
 
-
+    @* TABELA (Estética Mantida e Sem Scroll) *@
     @if (Model.Count == 0)
     {
         <div class="alert alert-warning text-center">Nenhum registro encontrado.</div>
     }
     else
     {
-        @if (TempData["Mensagem"] != null)
-        {
-            <div class="alert alert-success text-center">@TempData["Mensagem"]</div>
-        }
-
         <form asp-action="SalvarOrdemLote" method="post" id="formSalvarOrdem">
-
-            <table class="table table-bordered table-striped">
-                <thead class="table-light">
+            <table class="table table-bordered table-striped table-hover w-100">
+                <thead>
                     <tr>
-                        <th style="white-space: nowrap;">ID</th>
-                        <th style="white-space: nowrap;">Nome</th>
-                        <th style="white-space: nowrap;">Ano Que Foi Finalizado</th>
-                        <th style="white-space: nowrap;">Finalizado Esse Ano?</th>
-                        <th style="white-space: nowrap;">Nota</th>
-                        <th style="white-space: nowrap;">Já Zerado Alguma Vez?</th>
-                        <th style="white-space: nowrap;">Platinado Nesse Ano?</th>
-                        <th style="white-space: nowrap;">Ordem</th>
-                        <th style="white-space: nowrap;">Ações</th>
+                        <th style="width: 50px;">ID</th>
+                        <th class="col-nome">Nome</th>
+                        <th>Ano Finalizado</th>
+                        <th>Zerado Ano?</th>
+                        <th style="width: 100px;">Nota</th>
+                        <th>Já Zerado?</th>
+                        <th>Platinado?</th>
+                        <th class="col-ordem">Ordem</th>
+                        <th class="col-acoes">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var r in Model)
                     {
                         <tr>
-                            <td>@r.Id</td>
-                            <td style="white-space: nowrap;">@r.Name</td>
-                            <td>@r.Year</td>
-                            <td style="white-space: nowrap;">@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.FinishedInThisYear)</td>
-                            <td style="white-space: nowrap;">@r.Grade</td>
-                            <td style="white-space: nowrap;">@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.EverCompleted)</td>
-                            <td style="white-space: nowrap;">@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.Platinado)</td>
-
-                            <td style="width: 100px;">
-                                <input type="number"
-                                       class="form-control form-control-sm"
-                                       value="@r.Ordem"
-                                       name="ordemValores[@r.Id]" />
+                            <td class="text-center">@r.Id</td>
+                            <td class="col-nome" title="@r.Name">@r.Name</td>
+                            <td class="text-center">@r.Year</td>
+                            <td class="text-center">@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.FinishedInThisYear)</td>
+                            <td class="text-center">@r.Grade</td>
+                            <td class="text-center">@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.EverCompleted)</td>
+                            <td class="text-center">@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.Platinado)</td>
+                            <td>
+                                <input type="number" class="form-control form-control-sm" value="@r.Ordem" name="ordemValores[@r.Id]" />
                             </td>
-
-                            <td style="width: 210px;">
-                                <div class="btn-group" role="group">
+                            <td class="col-acoes">
+                                <div class="btn-group">
                                     <a asp-action="TelaEdicao" asp-route-id="@r.Id"
                                        asp-route-termoBusca="@currentFilter"
-                                       asp-route-filtroAno="@currentYearFilter"
-                                       asp-route-sortOrder="@currentSortOrder"
-                                       asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
+                                       asp-route-unicos="@currentUnicos"
                                        class="btn btn-warning btn-sm">Editar</a>
-
-                                    <a href="#" class="btn btn-danger btn-sm"
-                                       onclick="excluirJogo(event, @r.Id, '@jsEncoder.Encode(r.Name)')">
-                                        Excluir
-                                    </a>
-
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="excluirJogo(event, @r.Id, '@jsEncoder.Encode(r.Name)')">Excluir</button>
                                     <a asp-action="Detalhar" asp-route-id="@r.Id"
                                        asp-route-termoBusca="@currentFilter"
-                                       asp-route-filtroAno="@currentYearFilter"
-                                       asp-route-sortOrder="@currentSortOrder"
-                                       asp-route-filtroNaoZerados="@currentNaoZeradosFilter"
+                                       asp-route-unicos="@currentUnicos"
                                        class="btn btn-info btn-sm">Detalhes</a>
                                 </div>
                             </td>
@@ -171,24 +173,4 @@
             </table>
         </form>
     }
-
-    <div class="text-center mt-3">
-        <a asp-action="Index" class="btn btn-secondary">Voltar</a>
-    </div>
 </div>
-
-
-@section Scripts {
-    <script>
-        function excluirJogo(event, id, nome) {
-            event.preventDefault();
-            if (confirm("Tem certeza que deseja excluir o jogo '" + nome + "'?")) {
-                var form = document.createElement('form');
-                form.method = 'post';
-                form.action = '/Jogos/ExcluirJogo/' + id;
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
-    </script>
-}
