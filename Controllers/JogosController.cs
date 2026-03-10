@@ -417,95 +417,66 @@ namespace catalogo_jogos.Controllers
 
 
         // MÉTODO 'LISTAJOGOS'
-        public IActionResult ListaJogos(string termoBusca, string sortOrder, int? filtroAno, bool? filtroNaoZerados, bool? filtroPlatinados)
+        public IActionResult ListaJogos(string termoBusca, string sortOrder, int? filtroAno, bool? filtroNaoZerados, bool? filtroPlatinados, bool? unicos)
         {
             var listaJogos = new List<Jogo>();
-
             var distinctYears = new List<int>();
+
             using (var connectionYears = new SqliteConnection(_connectionString))
             {
                 connectionYears.Open();
                 var yearsCommand = connectionYears.CreateCommand();
                 yearsCommand.CommandText = "SELECT DISTINCT Year FROM Games ORDER BY Year DESC";
-                using (var yearsReader = yearsCommand.ExecuteReader())
-                {
-                    while (yearsReader.Read())
-                    {
-                        distinctYears.Add(yearsReader.GetInt32(0));
-                    }
-                }
+                using var yearsReader = yearsCommand.ExecuteReader();
+                while (yearsReader.Read()) distinctYears.Add(yearsReader.GetInt32(0));
             }
             ViewData["DistinctYears"] = distinctYears;
 
-            using (var connectionCheck = new SqliteConnection(_connectionString))
-            {
-                connectionCheck.Open();
-                try
-                {
-                    var alterCommand = connectionCheck.CreateCommand();
-                    alterCommand.CommandText = "ALTER TABLE Games ADD COLUMN Platinado INTEGER DEFAULT 0";
-                    alterCommand.ExecuteNonQuery();
-                }
-                catch (SqliteException ex) { if (!ex.Message.Contains("duplicate column name")) throw; }
-            }
-
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
-
             var command = connection.CreateCommand();
             var whereClauses = new List<string>();
 
             string sql = @"
-                WITH AllGamesWithCompletion AS (
-                    SELECT Id, Name, Year, FinishedInThisYear, Grade, Ordem, Platinado,
-                           MAX(CASE WHEN FinishedInThisYear = 1 OR FinishedInThisYear = 'true' THEN 1 ELSE 0 END) OVER (PARTITION BY Name) AS EverCompleted
-                    FROM Games
-                )
-                SELECT Id, Name, Year, FinishedInThisYear, Grade, EverCompleted, Ordem, Platinado
-                FROM AllGamesWithCompletion";
+        WITH AllGamesWithCompletion AS (
+            SELECT Id, Name, Year, FinishedInThisYear, Grade, Ordem, Platinado,
+                   MAX(CASE WHEN FinishedInThisYear = 1 OR FinishedInThisYear = 'true' THEN 1 ELSE 0 END) OVER (PARTITION BY Name) AS EverCompleted
+            FROM Games
+        )
+        SELECT Id, Name, Year, FinishedInThisYear, Grade, EverCompleted, Ordem, Platinado
+        FROM AllGamesWithCompletion";
 
+            // Filtros existentes
             if (!string.IsNullOrEmpty(termoBusca))
             {
-                var searchClauses = new List<string> { "Name LIKE $termoBusca", "CAST(Year AS TEXT) LIKE $termoBusca", "Grade LIKE $termoBusca" };
                 command.Parameters.AddWithValue("$termoBusca", $"%{termoBusca}%");
-                string termoLimpo = termoBusca.Trim();
-                if (termoLimpo.Equals("sim", StringComparison.OrdinalIgnoreCase)) searchClauses.Add("FinishedInThisYear = 1");
-                else if (termoLimpo.Equals("não", StringComparison.OrdinalIgnoreCase) || termoLimpo.Equals("nao", StringComparison.OrdinalIgnoreCase)) searchClauses.Add("FinishedInThisYear = 0");
-                whereClauses.Add($"({string.Join(" OR ", searchClauses)})");
+                whereClauses.Add("(Name LIKE $termoBusca OR CAST(Year AS TEXT) LIKE $termoBusca OR Grade LIKE $termoBusca)");
             }
-
             if (filtroAno.HasValue)
             {
                 whereClauses.Add("Year = $filtroAno");
                 command.Parameters.AddWithValue("$filtroAno", filtroAno.Value);
             }
+            if (filtroNaoZerados == true) whereClauses.Add("EverCompleted = 0");
+            if (filtroPlatinados == true) whereClauses.Add("Platinado = 1");
 
-            if (filtroNaoZerados == true)
-            {
-                whereClauses.Add("EverCompleted = 0");
-            }
+            if (whereClauses.Count > 0) sql += $" WHERE {string.Join(" AND ", whereClauses)}";
 
-            if (filtroPlatinados == true)
-            {
-                whereClauses.Add("Platinado = 1");
-            }
-
-            if (whereClauses.Count > 0)
-            {
-                sql += $" WHERE {string.Join(" AND ", whereClauses)}";
-            }
+            // --- NOVA LÓGICA: AGROUPAR POR NOME ---
+            if (unicos == true) sql += " GROUP BY Name";
 
             switch (sortOrder)
             {
-                case "name": sql += " ORDER BY Name"; break;
-                case "year": default: sql += " ORDER BY Year, Ordem"; break;
+                case "name": sql += " ORDER BY Name ASC"; break;
+                default: sql += " ORDER BY Year DESC, Ordem ASC"; break;
             }
 
             command.CommandText = sql;
 
+            // Persistência de estado para a View
             ViewData["CurrentFilter"] = termoBusca;
             ViewData["CurrentYearFilter"] = filtroAno;
-            ViewData["CurrentSortOrder"] = sortOrder;
+            ViewData["CurrentUnicos"] = unicos;
             ViewData["CurrentNaoZeradosFilter"] = filtroNaoZerados;
             ViewData["CurrentPlatinadosFilter"] = filtroPlatinados;
 
@@ -524,7 +495,6 @@ namespace catalogo_jogos.Controllers
                     Platinado = reader.GetBoolean(7)
                 });
             }
-
             return View(listaJogos);
         }
 

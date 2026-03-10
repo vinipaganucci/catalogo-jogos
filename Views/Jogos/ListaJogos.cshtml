@@ -6,37 +6,32 @@
     var distinctYears = ViewData["DistinctYears"] as List<int> ?? new List<int>();
     var currentFilter = ViewData["CurrentFilter"] as string;
     var currentYearFilter = ViewData["CurrentYearFilter"] as int?;
-    var currentSortOrder = ViewData["CurrentSortOrder"] as string;
+    var currentUnicos = ViewData["CurrentUnicos"] as bool?;
     var currentNaoZeradosFilter = ViewData["CurrentNaoZeradosFilter"] as bool?;
     var currentPlatinadosFilter = ViewData["CurrentPlatinadosFilter"] as bool?;
-    var currentUnicos = ViewData["CurrentUnicos"] as bool?;
 }
 
 <style>
-    /* Impede scroll horizontal em qualquer tela */
     html, body {
         max-width: 100%;
         overflow-x: hidden;
         background-color: #121212;
     }
 
-    /* Design de Cor Única para a Tabela */
     .table-custom {
         width: 100%;
         table-layout: fixed;
         border-collapse: collapse;
-        color: #ffffff;
-        background-color: #212529; /* Fundo sólido único */
+        color: #fff;
+        background-color: #212529;
         border: 1px solid #373b3e;
     }
 
         .table-custom thead th {
             background-color: #212529;
-            color: #ffffff;
             border-bottom: 2px solid #373b3e;
             font-size: 0.85rem;
             padding: 12px 4px;
-            vertical-align: middle;
             text-align: center;
         }
 
@@ -45,11 +40,10 @@
             border: 1px solid #373b3e;
             padding: 8px 4px;
             font-size: 0.9rem;
-            vertical-align: middle;
             text-align: center;
+            vertical-align: middle;
         }
 
-    /* Larguras fixas para evitar que a tabela estique */
     .col-id {
         width: 40px;
     }
@@ -66,40 +60,23 @@
         width: 85px;
     }
 
-    .col-nota {
-        width: 95px;
-    }
-
-    .col-ordem {
-        width: 70px;
-    }
-
     .col-acoes {
         width: 200px;
-    }
-
-    .container-fluid {
-        max-width: 100%;
-        overflow-x: hidden;
     }
 </style>
 
 <div class="container-fluid mt-5 px-4">
     <h3 class="mb-4 text-center text-white">@ViewData["Title"]</h3>
 
-    @* Seção de Busca *@
+    @* Busca *@
     <div class="mb-3 d-flex align-items-center justify-content-between flex-wrap">
         <form method="get" asp-action="ListaJogos" class="d-flex align-items-center flex-wrap">
             <label class="me-2 text-white">Buscar:</label>
-            <input type="text" name="termoBusca" class="form-control me-2 mb-2" style="width: 200px;"
-                   placeholder="Nome, ano ou nota..." value="@currentFilter" />
-
-            @* Mantém os filtros ativos na busca *@
+            <input type="text" name="termoBusca" class="form-control me-2 mb-2" style="width: 200px;" value="@currentFilter" />
             <input type="hidden" name="unicos" value="@(currentUnicos == true ? "true" : "")" />
             <input type="hidden" name="filtroAno" value="@currentYearFilter" />
-
             <button type="submit" class="btn btn-primary me-2 mb-2">Buscar</button>
-            <a asp-controller="Jogos" asp-action="Estatisticas" class="btn btn-primary me-2 mb-2">Ver Estatísticas</a>
+            <a asp-action="Estatisticas" class="btn btn-primary me-2 mb-2">Ver Estatísticas</a>
             <a asp-action="ListaJogos" class="btn btn-outline-secondary me-2 mb-2">Resetar</a>
         </form>
         <button type="submit" class="btn btn-success mb-2" form="formSalvarOrdem">Salvar Ordem</button>
@@ -107,118 +84,76 @@
 
     <hr class="border-secondary" />
 
-    @* Seção de Ordenação *@
+    @* Filtros Superiores *@
     <div class="mb-3">
         <strong class="text-white">Ordenar:</strong>
-        <a asp-action="ListaJogos" asp-route-sortOrder="name" asp-route-termoBusca="@currentFilter"
-           asp-route-filtroAno="@currentYearFilter" class="btn btn-sm btn-light border">A-Z</a>
-
+        <a asp-action="ListaJogos" asp-route-sortOrder="name" asp-route-termoBusca="@currentFilter" asp-route-filtroAno="@currentYearFilter" class="btn btn-sm btn-light border">A-Z</a>
         <span class="ms-3 text-white"><strong>Anos:</strong></span>
         @foreach (var year in distinctYears)
         {
-            var btnClass = (year == currentYearFilter) ? "btn-primary" : "btn-light border";
-            <a asp-action="ListaJogos" asp-route-filtroAno="@(year == currentYearFilter ? null : year)"
-               asp-route-termoBusca="@currentFilter" asp-route-unicos="@currentUnicos" class="btn btn-sm @btnClass me-1 mb-1">@year</a>
+            <a asp-action="ListaJogos" asp-route-filtroAno="@(year == currentYearFilter ? null : year)" asp-route-termoBusca="@currentFilter" asp-route-unicos="@currentUnicos" class="btn btn-sm @(year == currentYearFilter ? "btn-primary" : "btn-light border") me-1">@year</a>
         }
     </div>
 
-    @* SEÇÃO DOS BOTÕES QUE ESTAVAM FALTANDO *@
+    @* Outros Filtros *@
     <div class="mb-3">
         <strong class="text-white">Outros Filtros:</strong>
+        <a asp-action="ListaJogos" asp-route-unicos="@(currentUnicos == true ? null : true)" asp-route-termoBusca="@currentFilter" asp-route-filtroAno="@currentYearFilter" class="btn btn-sm @(currentUnicos == true ? "btn-primary" : "btn-light border")">Únicos</a>
 
-        @* Botão Únicos *@
-        <a asp-action="ListaJogos"
-           asp-route-unicos="@(currentUnicos == true ? null : true)"
-           asp-route-termoBusca="@currentFilter"
-           asp-route-filtroAno="@currentYearFilter"
-           class="btn btn-sm @(currentUnicos == true ? "btn-primary" : "btn-light border")">Únicos</a>
+        <a asp-action="ListaJogos" asp-route-filtroNaoZerados="@(currentNaoZeradosFilter == true ? null : true)" asp-route-termoBusca="@currentFilter" asp-route-filtroAno="@currentYearFilter" asp-route-unicos="@currentUnicos" class="btn btn-sm @(currentNaoZeradosFilter == true ? "btn-primary" : "btn-light border")">Jogos Nunca Zerados</a>
 
-        @* Botão Nunca Zerados *@
-        <a asp-action="ListaJogos"
-           asp-route-filtroNaoZerados="@(currentNaoZeradosFilter == true ? null : true)"
-           asp-route-termoBusca="@currentFilter"
-           asp-route-filtroAno="@currentYearFilter"
-           asp-route-unicos="@currentUnicos"
-           class="btn btn-sm @(currentNaoZeradosFilter == true ? "btn-primary" : "btn-light border")">Jogos Nunca Zerados</a>
-
-        @* Botão Platinados *@
-        <a asp-action="ListaJogos"
-           asp-route-filtroPlatinados="@(currentPlatinadosFilter == true ? null : true)"
-           asp-route-termoBusca="@currentFilter"
-           asp-route-filtroAno="@currentYearFilter"
-           asp-route-unicos="@currentUnicos"
-           class="btn btn-sm @(currentPlatinadosFilter == true ? "btn-primary" : "btn-light border")">Jogos Platinados</a>
+        <a asp-action="ListaJogos" asp-route-filtroPlatinados="@(currentPlatinadosFilter == true ? null : true)" asp-route-termoBusca="@currentFilter" asp-route-filtroAno="@currentYearFilter" asp-route-unicos="@currentUnicos" class="btn btn-sm @(currentPlatinadosFilter == true ? "btn-primary" : "btn-light border")">Jogos Platinados</a>
     </div>
 
-    @if (Model.Count == 0)
-    {
-        <div class="alert alert-warning text-center">Nenhum registro encontrado.</div>
-    }
-    else
-    {
-        <div class="table-responsive" style="overflow: hidden;">
-            <form asp-action="SalvarOrdemLote" method="post" id="formSalvarOrdem">
-                <table class="table-custom">
-                    <thead>
-                        <tr>
-                            <th class="col-id">ID</th>
-                            <th class="col-nome">Nome</th>
-                            <th class="col-fix">Ano Finalizado</th>
-                            <th class="col-fix">Zerado Ano?</th>
-                            <th class="col-nota">Nota</th>
-                            <th class="col-fix">Já Zerado?</th>
-                            <th class="col-fix">Platinado?</th>
-                            <th class="col-ordem">Ordem</th>
-                            <th class="col-acoes">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var r in Model)
-                        {
-                            <tr>
-                                <td>@r.Id</td>
-                                <td class="col-nome" title="@r.Name">@r.Name</td>
-                                <td>@r.Year</td>
-                                <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.FinishedInThisYear)</td>
-                                <td>@r.Grade</td>
-                                <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.EverCompleted)</td>
-                                <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.Platinado)</td>
-                                <td>
-                                    <input type="number" class="form-control form-control-sm text-center"
-                                           value="@r.Ordem" name="ordemValores[@r.Id]" />
-                                </td>
-                                <td>
-                                    <div class="btn-group" role="group">
-                                        <a asp-action="TelaEdicao" asp-route-id="@r.Id" class="btn btn-warning btn-sm">Editar</a>
-                                        <button type="button" class="btn btn-danger btn-sm"
-                                                onclick="excluirJogo(event, @r.Id, '@jsEncoder.Encode(r.Name)')">
-                                            Excluir
-                                        </button>
-                                        <a asp-action="Detalhar" asp-route-id="@r.Id" class="btn btn-info btn-sm">Detalhes</a>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </form>
-        </div>
-    }
-
-    <div class="text-center mt-3 mb-5">
-        <a asp-action="Index" class="btn btn-secondary">Voltar</a>
-    </div>
+    @* Tabela Sólida *@
+    <form asp-action="SalvarOrdemLote" method="post" id="formSalvarOrdem">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th class="col-id">ID</th>
+                    <th class="col-nome">Nome</th>
+                    <th class="col-fix">Ano Finalizado</th>
+                    <th class="col-fix">Zerado Ano?</th>
+                    <th style="width:95px;">Nota</th>
+                    <th class="col-fix">Já Zerado?</th>
+                    <th class="col-fix">Platinado?</th>
+                    <th style="width:70px;">Ordem</th>
+                    <th class="col-acoes">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td>@r.Id</td>
+                        <td class="col-nome" title="@r.Name">@r.Name</td>
+                        <td>@r.Year</td>
+                        <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.FinishedInThisYear)</td>
+                        <td>@r.Grade</td>
+                        <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.EverCompleted)</td>
+                        <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.Platinado)</td>
+                        <td><input type="number" class="form-control form-control-sm text-center" value="@r.Ordem" name="ordemValores[@r.Id]" /></td>
+                        <td>
+                            <div class="btn-group">
+                                <a asp-action="TelaEdicao" asp-route-id="@r.Id" class="btn btn-warning btn-sm">Editar</a>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="excluirJogo(event, @r.Id, '@jsEncoder.Encode(r.Name)')">Excluir</button>
+                                <a asp-action="Detalhar" asp-route-id="@r.Id" class="btn btn-info btn-sm">Detalhes</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </form>
 </div>
 
 @section Scripts {
     <script>
-        function excluirJogo(event, id, nome) {
-            if (confirm("Deseja excluir '" + nome + "'?")) {
-                var form = document.createElement('form');
-                form.method = 'post';
-                form.action = '/Jogos/ExcluirJogo/' + id;
-                document.body.appendChild(form);
-                form.submit();
+        function excluirJogo(e, id, n) {
+            if (confirm("Excluir '" + n + "'?")) {
+                const f = document.createElement('form');
+                f.method = 'post'; f.action = '/Jogos/ExcluirJogo/' + id;
+                document.body.appendChild(f); f.submit();
             }
         }
     </script>
