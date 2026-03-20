@@ -71,12 +71,12 @@ namespace catalogo_jogos.Controllers
                     EverCompleted = reader.GetBoolean(5),
                     IsLastFinished = reader.GetBoolean(6),
                     Ordem = reader.GetInt32(7),
-                    CoverUrl = reader.GetString(8),
-                    DlcUrl1 = reader.GetString(9),
-                    DlcUrl2 = reader.GetString(10),
-                    DlcUrl3 = reader.GetString(11),
-                    DlcUrl4 = reader.GetString(12),
-                    YoutubeUrl = reader.GetString(13),
+                    CoverUrl = reader.IsDBNull(8) ? "" : reader.GetString(8),
+                    DlcUrl1 = reader.IsDBNull(9) ? "" : reader.GetString(9),
+                    DlcUrl2 = reader.IsDBNull(10) ? "" : reader.GetString(10),
+                    DlcUrl3 = reader.IsDBNull(11) ? "" : reader.GetString(11),
+                    DlcUrl4 = reader.IsDBNull(12) ? "" : reader.GetString(12),
+                    YoutubeUrl = reader.IsDBNull(13) ? "" : reader.GetString(13),
                     Platinado = reader.GetBoolean(14)
                 };
                 return View(jogo);
@@ -279,7 +279,6 @@ namespace catalogo_jogos.Controllers
 
             ViewBag.QuantidadeJogosZerados = quantidadeJogosZerados;
 
-            // ... (Este método não precisa de alterações)
             var viewModel = new EstatisticasViewModel
             {
                 LastGameFinished = "Nenhum jogo zerado registrado"
@@ -368,12 +367,12 @@ namespace catalogo_jogos.Controllers
                     EverCompleted = reader.GetBoolean(5),
                     IsLastFinished = reader.GetBoolean(6),
                     Ordem = reader.GetInt32(7),
-                    CoverUrl = reader.GetString(8),
-                    DlcUrl1 = reader.GetString(9),
-                    DlcUrl2 = reader.GetString(10),
-                    DlcUrl3 = reader.GetString(11),
-                    DlcUrl4 = reader.GetString(12),
-                    YoutubeUrl = reader.GetString(13),
+                    CoverUrl = reader.IsDBNull(8) ? "" : reader.GetString(8),
+                    DlcUrl1 = reader.IsDBNull(9) ? "" : reader.GetString(9),
+                    DlcUrl2 = reader.IsDBNull(10) ? "" : reader.GetString(10),
+                    DlcUrl3 = reader.IsDBNull(11) ? "" : reader.GetString(11),
+                    DlcUrl4 = reader.IsDBNull(12) ? "" : reader.GetString(12),
+                    YoutubeUrl = reader.IsDBNull(13) ? "" : reader.GetString(13),
                     Platinado = reader.GetBoolean(14)
                 };
                 return View(jogo);
@@ -386,7 +385,6 @@ namespace catalogo_jogos.Controllers
         [HttpPost]
         public IActionResult SalvarOrdemLote(Dictionary<int, int> ordemValores)
         {
-            // ... (Este método não precisa de alterações)
             using var connection = new SqliteConnection(_connectionString);
             connection.Open();
             using var transaction = connection.BeginTransaction();
@@ -416,7 +414,7 @@ namespace catalogo_jogos.Controllers
         }
 
 
-        // MÉTODO 'LISTAJOGOS'
+        // MÉTODO 'LISTAJOGOS' (ATUALIZADO PARA A CAPA)
         public IActionResult ListaJogos(string termoBusca, string sortOrder, int? filtroAno, bool? filtroNaoZerados, bool? filtroPlatinados, bool? unicos)
         {
             var listaJogos = new List<Jogo>();
@@ -437,16 +435,16 @@ namespace catalogo_jogos.Controllers
             var command = connection.CreateCommand();
             var whereClauses = new List<string>();
 
+            // QUERY ATUALIZADA PARA INCLUIR CoverUrl
             string sql = @"
         WITH AllGamesWithCompletion AS (
-            SELECT Id, Name, Year, FinishedInThisYear, Grade, Ordem, Platinado,
+            SELECT Id, Name, Year, FinishedInThisYear, Grade, Ordem, Platinado, CoverUrl,
                    MAX(CASE WHEN FinishedInThisYear = 1 OR FinishedInThisYear = 'true' THEN 1 ELSE 0 END) OVER (PARTITION BY Name) AS EverCompleted
             FROM Games
         )
-        SELECT Id, Name, Year, FinishedInThisYear, Grade, EverCompleted, Ordem, Platinado
+        SELECT Id, Name, Year, FinishedInThisYear, Grade, EverCompleted, Ordem, Platinado, CoverUrl
         FROM AllGamesWithCompletion";
 
-            // Filtros existentes
             if (!string.IsNullOrEmpty(termoBusca))
             {
                 command.Parameters.AddWithValue("$termoBusca", $"%{termoBusca}%");
@@ -462,7 +460,6 @@ namespace catalogo_jogos.Controllers
 
             if (whereClauses.Count > 0) sql += $" WHERE {string.Join(" AND ", whereClauses)}";
 
-            // --- NOVA LÓGICA: AGROUPAR POR NOME ---
             if (unicos == true) sql += " GROUP BY Name";
 
             switch (sortOrder)
@@ -473,7 +470,6 @@ namespace catalogo_jogos.Controllers
 
             command.CommandText = sql;
 
-            // Persistência de estado para a View
             ViewData["CurrentFilter"] = termoBusca;
             ViewData["CurrentYearFilter"] = filtroAno;
             ViewData["CurrentUnicos"] = unicos;
@@ -492,7 +488,8 @@ namespace catalogo_jogos.Controllers
                     Grade = reader.GetString(4),
                     EverCompleted = reader.GetBoolean(5),
                     Ordem = reader.GetInt32(6),
-                    Platinado = reader.GetBoolean(7)
+                    Platinado = reader.GetBoolean(7),
+                    CoverUrl = reader.IsDBNull(8) ? "" : reader.GetString(8) // MAPEAMENTO DA CAPA
                 });
             }
             return View(listaJogos);
