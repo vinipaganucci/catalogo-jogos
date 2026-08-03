@@ -2,28 +2,50 @@
 @{
     ViewData["Title"] = @Model.Name;
 
+    // --- LÓGICA DE TRATAMENTO DE URL BLINDADA (SEM Uri) ---
     string videoEmbedUrl = null;
     if (!string.IsNullOrEmpty(Model.YoutubeUrl))
     {
-        string videoId = null;
-        if (Model.YoutubeUrl.Contains("watch?v="))
+        string rawUrl = Model.YoutubeUrl.Trim();
+
+        // Garante que a URL comece com protocolo para evitar links quebrados
+        if (!rawUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+            !rawUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         {
-            var uri = new Uri(Model.YoutubeUrl);
-            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
-            videoId = query["v"];
-        }
-        else if (Model.YoutubeUrl.Contains("youtu.be/"))
-        {
-            var uri = new Uri(Model.YoutubeUrl);
-            videoId = uri.Segments.Last();
-        }
-        else if (Model.YoutubeUrl.Contains("/embed/"))
-        {
-            var uri = new Uri(Model.YoutubeUrl);
-            videoId = uri.Segments.Last();
+            rawUrl = "https://" + rawUrl;
         }
 
-        if (videoId != null)
+        string videoId = null;
+
+        if (rawUrl.Contains("watch?v="))
+        {
+            int idx = rawUrl.IndexOf("watch?v=");
+            videoId = rawUrl.Substring(idx + 8);
+            if (videoId.Contains("&"))
+            {
+                videoId = videoId.Substring(0, videoId.IndexOf("&"));
+            }
+        }
+        else if (rawUrl.Contains("youtu.be/"))
+        {
+            int idx = rawUrl.IndexOf("youtu.be/");
+            videoId = rawUrl.Substring(idx + 9);
+            if (videoId.Contains("?"))
+            {
+                videoId = videoId.Substring(0, videoId.IndexOf("?"));
+            }
+        }
+        else if (rawUrl.Contains("/embed/"))
+        {
+            int idx = rawUrl.IndexOf("/embed/");
+            videoId = rawUrl.Substring(idx + 7);
+            if (videoId.Contains("?"))
+            {
+                videoId = videoId.Substring(0, videoId.IndexOf("?"));
+            }
+        }
+
+        if (!string.IsNullOrEmpty(videoId))
         {
             videoEmbedUrl = $"https://www.youtube.com/embed/{videoId}?autoplay=1&mute=1&rel=0";
         }
@@ -115,8 +137,8 @@
         border: 1px solid #3d3d3d !important;
         color: #fff !important;
         border-radius: 8px;
-        overflow-y: hidden; /* Remove a barra de rolagem interna */
-        resize: none; /* Impede o redimensionamento manual quebrar o layout */
+        overflow-y: hidden;
+        resize: none;
     }
 
     .video-wrapper {
@@ -307,7 +329,6 @@
             modalImg.src = imageUrl;
         }
 
-        // REDIMENSIONAMENTO AUTOMÁTICO DO TEXTAREA DE ACORDO COM O TEXTO
         document.addEventListener('DOMContentLoaded', function () {
             var textarea = document.getElementById('txtAnalise');
             if (textarea) {
@@ -316,10 +337,7 @@
                     textarea.style.height = (textarea.scrollHeight + 5) + 'px';
                 }
 
-                // Executa na carga inicial da página
                 ajustarAltura();
-
-                // Executa a cada alteração/digitação
                 textarea.addEventListener('input', ajustarAltura);
             }
         });
