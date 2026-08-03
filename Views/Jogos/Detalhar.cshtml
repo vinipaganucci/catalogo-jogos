@@ -115,6 +115,8 @@
         border: 1px solid #3d3d3d !important;
         color: #fff !important;
         border-radius: 8px;
+        overflow-y: hidden; /* Remove a barra de rolagem interna */
+        resize: none; /* Impede o redimensionamento manual quebrar o layout */
     }
 
     .video-wrapper {
@@ -186,7 +188,7 @@
                 </ul>
             </div>
 
-            @* SEÇÃO DE ANÁLISE COM TEXTBOX *@
+            @* SEÇÃO DE ANÁLISE COM AUTO-RESIZE *@
             <div class="card card-dark mb-4">
                 <div class="card-header text-center py-3">
                     <h5 class="m-0 fw-bold">Análise do Jogo</h5>
@@ -200,7 +202,7 @@
                           asp-route-filtroNaoZerados="@filtroNaoZerados"
                           method="post">
                         <div class="mb-3">
-                            <textarea name="analise" class="form-control form-control-dark" rows="5" placeholder="Escreva aqui sua opinião ou análise sobre o jogo...">@Model.Analise</textarea>
+                            <textarea id="txtAnalise" name="analise" class="form-control form-control-dark" placeholder="Escreva aqui sua opinião ou análise sobre o jogo...">@Model.Analise</textarea>
                         </div>
                         <div class="text-end">
                             <button type="submit" class="btn btn-success px-4 fw-semibold">Salvar Análise</button>
@@ -304,5 +306,22 @@
             var modalImg = document.getElementById('modalImage');
             modalImg.src = imageUrl;
         }
+
+        // REDIMENSIONAMENTO AUTOMÁTICO DO TEXTAREA DE ACORDO COM O TEXTO
+        document.addEventListener('DOMContentLoaded', function () {
+            var textarea = document.getElementById('txtAnalise');
+            if (textarea) {
+                function ajustarAltura() {
+                    textarea.style.height = 'auto';
+                    textarea.style.height = (textarea.scrollHeight + 5) + 'px';
+                }
+
+                // Executa na carga inicial da página
+                ajustarAltura();
+
+                // Executa a cada alteração/digitação
+                textarea.addEventListener('input', ajustarAltura);
+            }
+        });
     </script>
 }
