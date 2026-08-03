@@ -17,5 +17,6 @@
         public string DlcUrl4 { get; set; }
         public string YoutubeUrl { get; set; }
         public bool Platinado { get; set; }
+        public string Analise { get; set; } 
     }
 }

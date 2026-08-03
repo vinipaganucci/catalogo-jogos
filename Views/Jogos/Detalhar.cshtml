@@ -2,43 +2,33 @@
 @{
     ViewData["Title"] = @Model.Name;
 
-    // --- LÓGICA PARA CONVERTER O LINK DO YOUTUBE ---
     string videoEmbedUrl = null;
     if (!string.IsNullOrEmpty(Model.YoutubeUrl))
     {
         string videoId = null;
         if (Model.YoutubeUrl.Contains("watch?v="))
         {
-            // Extrai o ID de uma URL padrão (ex: ...watch?v=VIDEO_ID)
             var uri = new Uri(Model.YoutubeUrl);
             var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
             videoId = query["v"];
         }
         else if (Model.YoutubeUrl.Contains("youtu.be/"))
         {
-            // Extrai o ID de uma URL curta (ex: ...youtu.be/VIDEO_ID)
             var uri = new Uri(Model.YoutubeUrl);
             videoId = uri.Segments.Last();
         }
         else if (Model.YoutubeUrl.Contains("/embed/"))
         {
-            // Extrai o ID de uma URL de embed (ex: .../embed/VIDEO_ID)
             var uri = new Uri(Model.YoutubeUrl);
             videoId = uri.Segments.Last();
         }
 
-        // =======================================
-        // --- MUDANÇA PARA O AUTOPLAY ---
-        // =======================================
         if (videoId != null)
         {
-            // Monta a URL final com os parâmetros de autoplay e mudo
             videoEmbedUrl = $"https://www.youtube.com/embed/{videoId}?autoplay=1&mute=1&rel=0";
         }
     }
-    // --- FIM DA LÓGICA ---
 
-    // Lógica das DLCs
     bool hasDlcs = !string.IsNullOrEmpty(Model.DlcUrl1) ||
                    !string.IsNullOrEmpty(Model.DlcUrl2) ||
                    !string.IsNullOrEmpty(Model.DlcUrl3) ||
@@ -46,13 +36,11 @@
 
     bool hasMedia = !string.IsNullOrEmpty(videoEmbedUrl) || hasDlcs;
 
-    // Lógica dos Filtros
     var termoBusca = Context.Request.Query["termoBusca"];
     var sortOrder = Context.Request.Query["sortOrder"];
     var filtroAno = Context.Request.Query["filtroAno"];
     var filtroNaoZerados = Context.Request.Query["filtroNaoZerados"];
 
-    // Lógica da Cor da Nota
     string badgeColor;
     switch (Model.Grade)
     {
@@ -158,41 +146,40 @@
                     <li class="list-group-item d-flex justify-content-between align-items-center info-card">Nota <span class="badge @badgeColor rounded-pill fs-6">@Model.Grade</span></li>
                     <li class="list-group-item d-flex justify-content-between align-items-center info-card">
                         Terminado esse ano?
-                        @if (Model.FinishedInThisYear)
-                        {
-                            <span class="fw-bold">Sim</span>
-                        }
-                        else
-                        {
-
-                            <span class="fw-bold">Não</span>
-                        }
+                        <span class="fw-bold">@(Model.FinishedInThisYear ? "Sim" : "Não")</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center info-card">
                         Já Zerado Alguma Vez?
-                        @if (Model.EverCompleted)
-                        {
-                            <span class="fw-bold">Sim</span>
-                        }
-                        else
-                        {
-
-                            <span class="fw-bold">Não</span>
-                        }
+                        <span class="fw-bold">@(Model.EverCompleted ? "Sim" : "Não")</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center info-card">
                         Platinado?
-                        @if (Model.Platinado)
-                        {
-                            <span class="fw-bold">Sim</span>
-                        }
-                        else
-                        {
-
-                            <span class="fw-bold">Não</span>
-                        }
+                        <span class="fw-bold">@(Model.Platinado ? "Sim" : "Não")</span>
                     </li>
                 </ul>
+            </div>
+
+            @* SEÇÃO DE ANÁLISE COM TEXTBOX *@
+            <div class="card mb-4">
+                <div class="card-header text-center">
+                    <h4>Análise do Jogo</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="SalvarAnalise"
+                          asp-route-id="@Model.Id"
+                          asp-route-termoBusca="@termoBusca"
+                          asp-route-sortOrder="@sortOrder"
+                          asp-route-filtroAno="@filtroAno"
+                          asp-route-filtroNaoZerados="@filtroNaoZerados"
+                          method="post">
+                        <div class="mb-3">
+                            <textarea name="analise" class="form-control" rows="5" placeholder="Escreva aqui sua opinião ou análise sobre o jogo...">@Model.Analise</textarea>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-success">Salvar Análise</button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             <div class="card">
@@ -271,7 +258,6 @@
 
 </div>
 
-
 <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -284,7 +270,6 @@
         </div>
     </div>
 </div>
-
 
 @section Scripts {
     <script>
