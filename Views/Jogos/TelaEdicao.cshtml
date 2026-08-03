@@ -9,132 +9,162 @@
     var filtroNaoZerados = Context.Request.Query["filtroNaoZerados"];
 }
 
-<div class="container mt-5" style="max-width: 500px;">
-    <h3 class="mb-4 text-center">@ViewData["Title"]</h3>
+<style>
+    body {
+        background-color: #121212;
+        color: #e0e0e0;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
 
-    <form asp-action="AtualizarObjetoJogo"
-          asp-route-termoBusca="@termoBusca"
-          asp-route-sortOrder="@sortOrder"
-          asp-route-filtroAno="@filtroAno"
-          asp-route-filtroNaoZerados="@filtroNaoZerados"
-          method="post">
+    .edit-card-container {
+        background-color: #1e1e1e;
+        border: 1px solid #2d2d2d;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
 
-        <input type="hidden" asp-for="Id" />
+    .form-control, .form-select {
+        background-color: #2a2a2a !important;
+        border: 1px solid #3d3d3d !important;
+        color: #fff !important;
+        border-radius: 6px;
+    }
 
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="Name">Título:</label>
-            <div class="col-sm-7">
-                <input type="text" class="form-control" placeholder="Ex: Resident Evil" asp-for="Name" />
-            </div>
-        </div>
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="Year">Ano Que Foi Jogado:</label>
-            <div class="col-sm-7">
-                <select asp-for="Year" id="selectYear" class="form-select">
-                    @for (int year = currentYear + 1; year >= 2010; year--)
-                    {
-                        <option value="@year">@year</option>
-                    }
-                </select>
-            </div>
-        </div>
-        <div class="mb-4 row">
-            <label class="col-sm-5 col-form-label" asp-for="Grade">Nota:</label>
-            <div class="col-sm-7">
-                <select class="form-select" asp-for="Grade">
-                    <option selected disabled value="">Selecione uma nota</option>
-                    <option value="Obra-Prima">Obra-Prima</option>
-                    <option value="Excelente">Excelente</option>
-                    <option value="Muito Bom">Muito Bom</option>
-                    <option value="Bom">Bom</option>
-                    <option value="Mediano">Mediano</option>
-                    <option value="Ruim">Ruim</option>
-                    <option value="Péssimo">Péssimo</option>
-                    <option value="Lixo Podre">Lixo Podre</option>
-                </select>
-            </div>
-        </div>
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="Ordem">Ordem (Manual):</label>
-            <div class="col-sm-7">
-                <input type="number" class="form-control" asp-for="Ordem" />
-            </div>
-        </div>
+    label {
+        color: #ffffff;
+        font-weight: 500;
+    }
+</style>
 
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="CoverUrl">URL da Capa:</label>
-            <div class="col-sm-7">
-                <input type="text" class="form-control" asp-for="CoverUrl" placeholder="http://..." />
-            </div>
-        </div>
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="DlcUrl1">URL Foto DLC 1:</label>
-            <div class="col-sm-7">
-                <input type="text" class="form-control" asp-for="DlcUrl1" placeholder="http://..." />
-            </div>
-        </div>
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="DlcUrl2">URL Foto DLC 2:</label>
-            <div class="col-sm-7">
-                <input type="text" class="form-control" asp-for="DlcUrl2" placeholder="http://..." />
-            </div>
-        </div>
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="DlcUrl3">URL Foto DLC 3:</label>
-            <div class="col-sm-7">
-                <input type="text" class="form-control" asp-for="DlcUrl3" placeholder="http://..." />
-            </div>
-        </div>
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="DlcUrl4">URL Foto DLC 4:</label>
-            <div class="col-sm-7">
-                <input type="text" class="form-control" asp-for="DlcUrl4" placeholder="http://..." />
-            </div>
-        </div>
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label" asp-for="YoutubeUrl">URL do YouTube:</label>
-            <div class="col-sm-7">
-                <input type="text" class="form-control" asp-for="YoutubeUrl" placeholder="https://www.youtube.com/watch?v=..." />
-            </div>
-        </div>
+<div class="container mt-4 mb-5" style="max-width: 550px;">
+    <div class="edit-card-container">
+        <h3 class="mb-4 text-center fw-bold text-white">@ViewData["Title"]</h3>
 
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label text-sm-end" asp-for="FinishedInThisYear">Zerado Nesse Ano?:</label>
-            <div class="col-sm-7">
-                <div class="form-check pt-2">
-                    <input asp-for="FinishedInThisYear" type="checkbox" class="form-check-input" value="true" id="finishedCheckbox" />
+        <form asp-action="AtualizarObjetoJogo"
+              asp-route-termoBusca="@termoBusca"
+              asp-route-sortOrder="@sortOrder"
+              asp-route-filtroAno="@filtroAno"
+              asp-route-filtroNaoZerados="@filtroNaoZerados"
+              method="post">
+
+            <input type="hidden" asp-for="Id" />
+
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-5 col-form-label" asp-for="Name">Título:</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" placeholder="Ex: Resident Evil" asp-for="Name" />
                 </div>
             </div>
-        </div>
-        <div class="mb-3 row" id="lastFinishedContainer" style="display: none;">
-            <label class="col-sm-5 col-form-label text-sm-end" asp-for="IsLastFinished">Este foi o último que zerei?</label>
-            <div class="col-sm-7">
-                <div class="form-check pt-2">
-                    <input asp-for="IsLastFinished" type="checkbox" class="form-check-input" value="true" id="lastFinishedCheckbox" />
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-5 col-form-label" asp-for="Year">Ano Que Foi Jogado:</label>
+                <div class="col-sm-7">
+                    <select asp-for="Year" id="selectYear" class="form-select">
+                        @for (int year = currentYear + 1; year >= 2010; year--)
+                        {
+                            <option value="@year">@year</option>
+                        }
+                    </select>
                 </div>
             </div>
-        </div>
-
-        <div class="mb-3 row">
-            <label class="col-sm-5 col-form-label text-sm-end" asp-for="Platinado">Platinado?:</label>
-            <div class="col-sm-7">
-                <div class="form-check pt-2">
-                    <input asp-for="Platinado" type="checkbox" class="form-check-input" value="true" />
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-5 col-form-label" asp-for="Grade">Nota:</label>
+                <div class="col-sm-7">
+                    <select class="form-select" asp-for="Grade">
+                        <option selected disabled value="">Selecione uma nota</option>
+                        <option value="Obra-Prima">Obra-Prima</option>
+                        <option value="Excelente">Excelente</option>
+                        <option value="Muito Bom">Muito Bom</option>
+                        <option value="Bom">Bom</option>
+                        <option value="Mediano">Mediano</option>
+                        <option value="Ruim">Ruim</option>
+                        <option value="Péssimo">Péssimo</option>
+                        <option value="Lixo Podre">Lixo Podre</option>
+                    </select>
                 </div>
             </div>
-        </div>
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-5 col-form-label" asp-for="Ordem">Ordem (Manual):</label>
+                <div class="col-sm-7">
+                    <input type="number" class="form-control" asp-for="Ordem" />
+                </div>
+            </div>
 
-        <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-            <a asp-action="Detalhar"
-               asp-route-id="@Model.Id"
-               asp-route-termoBusca="@termoBusca"
-               asp-route-sortOrder="@sortOrder"
-               asp-route-filtroAno="@filtroAno"
-               asp-route-filtroNaoZerados="@filtroNaoZerados"
-               class="btn btn-secondary">Voltar</a>
-        </div>
-    </form>
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-5 col-form-label" asp-for="CoverUrl">URL da Capa:</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" asp-for="CoverUrl" placeholder="http://..." />
+                </div>
+            </div>
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-5 col-form-label" asp-for="DlcUrl1">URL Foto DLC 1:</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" asp-for="DlcUrl1" placeholder="http://..." />
+                </div>
+            </div>
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-5 col-form-label" asp-for="DlcUrl2">URL Foto DLC 2:</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" asp-for="DlcUrl2" placeholder="http://..." />
+                </div>
+            </div>
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-5 col-form-label" asp-for="DlcUrl3">URL Foto DLC 3:</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" asp-for="DlcUrl3" placeholder="http://..." />
+                </div>
+            </div>
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-5 col-form-label" asp-for="DlcUrl4">URL Foto DLC 4:</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" asp-for="DlcUrl4" placeholder="http://..." />
+                </div>
+            </div>
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-5 col-form-label" asp-for="YoutubeUrl">URL do YouTube:</label>
+                <div class="col-sm-7">
+                    <input type="text" class="form-control" asp-for="YoutubeUrl" placeholder="https://www.youtube.com/watch?v=..." />
+                </div>
+            </div>
+
+            <div class="mb-3 row align-items-center">
+                <label class="col-sm-5 col-form-label" asp-for="FinishedInThisYear">Zerado Nesse Ano?:</label>
+                <div class="col-sm-7">
+                    <div class="form-check pt-1">
+                        <input asp-for="FinishedInThisYear" type="checkbox" class="form-check-input" value="true" id="finishedCheckbox" style="transform: scale(1.2);" />
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3 row align-items-center" id="lastFinishedContainer" style="display: none;">
+                <label class="col-sm-5 col-form-label" asp-for="IsLastFinished">Este foi o último que zerei?</label>
+                <div class="col-sm-7">
+                    <div class="form-check pt-1">
+                        <input asp-for="IsLastFinished" type="checkbox" class="form-check-input" value="true" id="lastFinishedCheckbox" style="transform: scale(1.2);" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4 row align-items-center">
+                <label class="col-sm-5 col-form-label" asp-for="Platinado">Platinado?:</label>
+                <div class="col-sm-7">
+                    <div class="form-check pt-1">
+                        <input asp-for="Platinado" type="checkbox" class="form-check-input" value="true" style="transform: scale(1.2);" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-warning font-weight-bold">Salvar Alterações</button>
+                <a asp-action="Detalhar"
+                   asp-route-id="@Model.Id"
+                   asp-route-termoBusca="@termoBusca"
+                   asp-route-sortOrder="@sortOrder"
+                   asp-route-filtroAno="@filtroAno"
+                   asp-route-filtroNaoZerados="@filtroNaoZerados"
+                   class="btn btn-outline-secondary text-white">Voltar</a>
+            </div>
+        </form>
+    </div>
 </div>
 
 @section Scripts {

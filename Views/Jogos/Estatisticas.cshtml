@@ -2,67 +2,93 @@
 @{
     ViewData["Title"] = "Estatísticas";
 
-    // LÊ OS FILTROS QUE A 'LISTAJOGOS' ENVIOU PELA URL
     var termoBusca = Context.Request.Query["termoBusca"];
     var sortOrder = Context.Request.Query["sortOrder"];
     var filtroAno = Context.Request.Query["filtroAno"];
     var filtroNaoZerados = Context.Request.Query["filtroNaoZerados"];
 }
 
-<div class="row">
-    <div class="col-md-6 offset-md-3">
-        <h1 class="text-center">Estatísticas</h1>
-        <br />
+<style>
+    body {
+        background-color: #121212;
+        color: #e0e0e0;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
 
-        <div class="card mb-3">
-            <div class="card-header">
-                Último Jogo Zerado
-            </div>
-            <div class="card-body">
-                <h4 class="card-title">@Model.LastGameFinished</h4>
-            </div>
-        </div>
+    .stat-card {
+        background-color: #1e1e1e;
+        border: 1px solid #2d2d2d;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
 
-        <div class="card mb-3">
-            <div class="card-header">
-                Jogo(s) Zerado(s) Mais Vezes
-            </div>
-            <div class="card-body">
-                @foreach (var game in Model.MostFinishedGame)
-                {
-                    <h4 class="card-title">@game</h4>
-                }
-            </div>
-        </div>
+        .stat-card .card-header {
+            background-color: #252525;
+            border-bottom: 1px solid #333;
+            color: #a0a0a0;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
 
-        <div class="card mb-3">
-            <div class="card-header">
-                Jogo(s) Registrado(s) Mais Vezes (Zerado ou Não)
-            </div>
-            <div class="card-body">
-                @foreach (var game in Model.MostPlayedGame)
-                {
-                    <h4 class="card-title">@game</h4>
-                }
-            </div>
-        </div>
+        .stat-card .card-title {
+            color: #0d6efd;
+            font-weight: 700;
+        }
+</style>
 
-        <div class="card mb-3">
-            <div class="card-header">
-                Quantidade De Jogos Zerados Até Hoje
-            </div>
-            <div class="card-body">
-                <h4>@ViewBag.QuantidadeJogosZerados</h4>
-            </div>
-        </div>
+<div class="container mt-4 mb-5" style="max-width: 650px;">
+    <h1 class="text-center mb-4 fw-bold text-white">Estatísticas do Catálogo</h1>
 
-        <div class="mt-4">
-            <a asp-action="ListaJogos"
-               asp-route-termoBusca="@termoBusca"
-               asp-route-sortOrder="@sortOrder"
-               asp-route-filtroAno="@filtroAno"
-               asp-route-filtroNaoZerados="@filtroNaoZerados"
-               class="btn btn-secondary">Voltar para a Lista</a>
+    <div class="stat-card card mb-3">
+        <div class="card-header py-3">
+            Último Jogo Zerado
         </div>
+        <div class="card-body text-center py-4">
+            <h3 class="card-title m-0 text-white">@Model.LastGameFinished</h3>
+        </div>
+    </div>
+
+    <div class="stat-card card mb-3">
+        <div class="card-header py-3">
+            Jogo(s) Zerado(s) Mais Vezes
+        </div>
+        <div class="card-body text-center py-4">
+            @foreach (var game in Model.MostFinishedGame)
+            {
+                <h4 class="card-title text-success m-0 mb-1">@game</h4>
+            }
+        </div>
+    </div>
+
+    <div class="stat-card card mb-3">
+        <div class="card-header py-3">
+            Jogo(s) Registrado(s) Mais Vezes (Zerado ou Não)
+        </div>
+        <div class="card-body text-center py-4">
+            @foreach (var game in Model.MostPlayedGame)
+            {
+                <h4 class="card-title text-info m-0 mb-1">@game</h4>
+            }
+        </div>
+    </div>
+
+    <div class="stat-card card mb-4">
+        <div class="card-header py-3 text-center">
+            Quantidade De Jogos Zerados Até Hoje
+        </div>
+        <div class="card-body text-center py-4">
+            <h1 class="display-3 fw-bold text-warning m-0">@ViewBag.QuantidadeJogosZerados</h1>
+        </div>
+    </div>
+
+    <div class="text-center">
+        <a asp-action="ListaJogos"
+           asp-route-termoBusca="@termoBusca"
+           asp-route-sortOrder="@sortOrder"
+           asp-route-filtroAno="@filtroAno"
+           asp-route-filtroNaoZerados="@filtroNaoZerados"
+           class="btn btn-outline-secondary px-5 text-white">Voltar para a Lista</a>
     </div>
 </div>

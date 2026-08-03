@@ -50,12 +50,18 @@
         case "Bom": badgeColor = "bg-info text-dark"; break;
         case "Mediano": badgeColor = "bg-secondary"; break;
         case "Ruim": badgeColor = "bg-danger"; break;
-        case "Péssimo": case "Lixo Podre": badgeColor = "bg-dark"; break;
+        case "Péssimo": case "Lixo Podre": badgeColor = "bg-dark border border-danger text-danger"; break;
         default: badgeColor = "bg-light text-dark"; break;
     }
 }
 
 <style>
+    body {
+        background-color: #121212;
+        color: #e0e0e0;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
     .game-cover-wrapper {
         max-width: 360px;
         margin: 0 auto;
@@ -66,8 +72,8 @@
         height: auto;
         aspect-ratio: 3 / 4;
         object-fit: cover;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.6);
     }
 
     .dlc-image {
@@ -76,18 +82,39 @@
         object-fit: cover;
         border-radius: 8px;
         margin-bottom: 15px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
         cursor: pointer;
+        transition: transform 0.2s ease;
     }
 
-    .modal-img {
-        width: 100%;
-        height: auto;
+        .dlc-image:hover {
+            transform: scale(1.03);
+        }
+
+    .card-dark {
+        background-color: #1e1e1e;
+        border: 1px solid #2d2d2d;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+        .card-dark .card-header {
+            background-color: #252525;
+            border-bottom: 1px solid #333;
+            color: #fff;
+        }
+
+    .list-group-item-dark-custom {
+        background-color: #1e1e1e;
+        border-color: #2a2a2a;
+        color: #e0e0e0;
+    }
+
+    .form-control-dark {
+        background-color: #2a2a2a !important;
+        border: 1px solid #3d3d3d !important;
+        color: #fff !important;
         border-radius: 8px;
-    }
-
-    .info-card {
-        background-color: #f8f9fa;
     }
 
     .video-wrapper {
@@ -98,7 +125,7 @@
         max-width: 100%;
         background: #000;
         border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         margin-bottom: 15px;
     }
 
@@ -115,15 +142,15 @@
 
     <div class="row">
         <div class="col-12 text-center">
-            <h1 class="display-4 mb-4">@Model.Name</h1>
+            <h1 class="display-5 mb-4 fw-bold text-white">@Model.Name</h1>
         </div>
     </div>
 
     <div class="row justify-content-center">
         <div class="col-lg-10">
 
-            <div class="card mb-4">
-                <div class="card-body text-center p-3">
+            <div class="card card-dark mb-4 border-0 bg-transparent shadow-none">
+                <div class="card-body text-center p-0">
                     <div class="game-cover-wrapper">
                         @if (!string.IsNullOrEmpty(Model.CoverUrl))
                         {
@@ -131,28 +158,28 @@
                         }
                         else
                         {
-                            <div class="alert alert-secondary m-0">Nenhuma capa cadastrada.</div>
+                            <div class="alert alert-secondary m-0 bg-dark text-muted border-secondary">Nenhuma capa cadastrada.</div>
                         }
                     </div>
                 </div>
             </div>
 
-            <div class="card mb-4 info-card">
-                <div class="card-header text-center">
-                    <h4>Informações</h4>
+            <div class="card card-dark mb-4">
+                <div class="card-header text-center py-3">
+                    <h5 class="m-0 fw-bold">Informações</h5>
                 </div>
                 <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between align-items-center info-card">Ano Jogado/Terminado <span class="fw-bold">@Model.Year</span></li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center info-card">Nota <span class="badge @badgeColor rounded-pill fs-6">@Model.Grade</span></li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center info-card">
+                    <li class="list-group-item list-group-item-dark-custom d-flex justify-content-between align-items-center">Ano Jogado/Terminado <span class="fw-bold">@Model.Year</span></li>
+                    <li class="list-group-item list-group-item-dark-custom d-flex justify-content-between align-items-center">Nota <span class="badge @badgeColor rounded-pill px-3 py-2 fs-6">@Model.Grade</span></li>
+                    <li class="list-group-item list-group-item-dark-custom d-flex justify-content-between align-items-center">
                         Terminado esse ano?
                         <span class="fw-bold">@(Model.FinishedInThisYear ? "Sim" : "Não")</span>
                     </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center info-card">
+                    <li class="list-group-item list-group-item-dark-custom d-flex justify-content-between align-items-center">
                         Já Zerado Alguma Vez?
                         <span class="fw-bold">@(Model.EverCompleted ? "Sim" : "Não")</span>
                     </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center info-card">
+                    <li class="list-group-item list-group-item-dark-custom d-flex justify-content-between align-items-center">
                         Platinado?
                         <span class="fw-bold">@(Model.Platinado ? "Sim" : "Não")</span>
                     </li>
@@ -160,11 +187,11 @@
             </div>
 
             @* SEÇÃO DE ANÁLISE COM TEXTBOX *@
-            <div class="card mb-4">
-                <div class="card-header text-center">
-                    <h4>Análise do Jogo</h4>
+            <div class="card card-dark mb-4">
+                <div class="card-header text-center py-3">
+                    <h5 class="m-0 fw-bold">Análise do Jogo</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-3">
                     <form asp-action="SalvarAnalise"
                           asp-route-id="@Model.Id"
                           asp-route-termoBusca="@termoBusca"
@@ -173,29 +200,29 @@
                           asp-route-filtroNaoZerados="@filtroNaoZerados"
                           method="post">
                         <div class="mb-3">
-                            <textarea name="analise" class="form-control" rows="5" placeholder="Escreva aqui sua opinião ou análise sobre o jogo...">@Model.Analise</textarea>
+                            <textarea name="analise" class="form-control form-control-dark" rows="5" placeholder="Escreva aqui sua opinião ou análise sobre o jogo...">@Model.Analise</textarea>
                         </div>
                         <div class="text-end">
-                            <button type="submit" class="btn btn-success">Salvar Análise</button>
+                            <button type="submit" class="btn btn-success px-4 fw-semibold">Salvar Análise</button>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header text-center">
-                    <h4>Gameplay e DLCs</h4>
+            <div class="card card-dark mb-4">
+                <div class="card-header text-center py-3">
+                    <h5 class="m-0 fw-bold">Gameplay e DLCs</h5>
                 </div>
                 <div class="card-body">
                     @if (!hasMedia)
                     {
-                        <div class="alert alert-secondary m-0">Nenhum vídeo ou foto de DLC cadastrado.</div>
+                        <div class="alert alert-secondary m-0 bg-dark text-muted border-secondary text-center">Nenhum vídeo ou foto de DLC cadastrado.</div>
                     }
                     else
                     {
                         @if (!string.IsNullOrEmpty(videoEmbedUrl))
                         {
-                            <h5 class="mb-3">Gameplay</h5>
+                            <h6 class="mb-3 text-white-50">Gameplay</h6>
                             <div class="video-wrapper">
                                 <iframe src="@videoEmbedUrl"
                                         frameborder="0"
@@ -207,7 +234,7 @@
 
                         @if (hasDlcs)
                         {
-                            <h5 class="mb-3 mt-4">DLCs Completas</h5>
+                            <h6 class="mb-3 mt-4 text-white-50">DLCs Completas</h6>
                             <div class="row">
                                 @if (!string.IsNullOrEmpty(Model.DlcUrl1))
                                 {
@@ -234,14 +261,14 @@
         </div>
     </div>
 
-    <div class="row mt-4">
+    <div class="row mt-3">
         <div class="col-12 text-center">
             <a asp-action="TelaEdicao" asp-route-id="@Model.Id"
                asp-route-termoBusca="@termoBusca"
                asp-route-sortOrder="@sortOrder"
                asp-route-filtroAno="@filtroAno"
                asp-route-filtroNaoZerados="@filtroNaoZerados"
-               class="btn btn-warning btn-lg px-5 me-2">
+               class="btn btn-warning btn-lg px-5 me-2 font-weight-bold">
                 Editar
             </a>
 
@@ -250,7 +277,7 @@
                asp-route-sortOrder="@sortOrder"
                asp-route-filtroAno="@filtroAno"
                asp-route-filtroNaoZerados="@filtroNaoZerados"
-               class="btn btn-secondary btn-lg px-5">
+               class="btn btn-outline-secondary btn-lg px-5 text-white">
                 Voltar para a Lista
             </a>
         </div>
@@ -260,11 +287,11 @@
 
 <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
+        <div class="modal-content bg-dark border-secondary">
             <div class="modal-body p-2">
-                <img id="modalImage" src="" alt="Imagem Ampliada" class="modal-img" />
+                <img id="modalImage" src="" alt="Imagem Ampliada" class="modal-img w-100 rounded" />
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer border-secondary">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
             </div>
         </div>
