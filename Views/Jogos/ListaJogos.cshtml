@@ -56,9 +56,28 @@
             vertical-align: middle;
         }
 
-        .table-custom tbody tr:hover td {
-            background-color: #262626;
+        /* CURSOR E ESTILO DE ARRASTAR */
+        .table-custom tbody tr {
+            cursor: grab;
+            transition: background-color 0.15s ease;
         }
+
+            .table-custom tbody tr:active {
+                cursor: grabbing;
+            }
+
+            .table-custom tbody tr:hover td {
+                background-color: #262626;
+            }
+
+    .sortable-ghost {
+        opacity: 0.4;
+        background-color: #0d6efd !important;
+    }
+
+    .sortable-chosen {
+        background-color: #2c3034 !important;
+    }
 
     .img-capa {
         width: 45px;
@@ -67,7 +86,7 @@
         border-radius: 4px;
         border: 1px solid #3d3d3d;
         background-color: #141414;
-        transition: transform 0.2s ease;
+        pointer-events: none; /* Evita que o clique na imagem trave o drag */
     }
 
     .col-id {
@@ -148,7 +167,7 @@
         <a asp-action="ListaJogos" asp-route-filtroPlatinados="@(currentPlatinadosFilter == true ? null : true)" asp-route-termoBusca="@currentFilter" asp-route-filtroAno="@currentYearFilter" asp-route-unicos="@currentUnicos" class="btn btn-sm @(currentPlatinadosFilter == true ? "btn-primary" : "btn-outline-secondary text-white")">Jogos Platinados</a>
     </div>
 
-    @* Tabela *@
+    @* Tabela Reordenável *@
     <form asp-action="SalvarOrdemLote" method="post" id="formSalvarOrdem">
         <div class="table-container">
             <table class="table-custom">
@@ -166,10 +185,10 @@
                         <th class="col-acoes">Ações</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tabelaJogosBody">
                     @foreach (var r in Model)
                     {
-                        <tr>
+                        <tr data-id="@r.Id">
                             <td><small class="text-muted">@r.Id</small></td>
                             <td class="col-capa">
                                 @if (!string.IsNullOrEmpty(r.CoverUrl))
@@ -187,7 +206,7 @@
                             <td>@r.Grade</td>
                             <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.EverCompleted)</td>
                             <td>@catalogo_jogos.Helper.MappingHelper.MappingBoolean(@r.Platinado)</td>
-                            <td><input type="number" class="form-control form-control-sm text-center" value="@r.Ordem" name="ordemValores[@r.Id]" /></td>
+                            <td><input type="number" class="form-control form-control-sm text-center input-ordem" value="@r.Ordem" name="ordemValores[@r.Id]" /></td>
                             <td>
                                 <div class="btn-group btn-action-group" role="group">
                                     <a asp-action="TelaEdicao" asp-route-id="@r.Id" class="btn btn-warning btn-sm">Editar</a>
@@ -204,6 +223,9 @@
 </div>
 
 @section Scripts {
+    <!-- CDN do SortableJS para Drag and Drop fluido -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
     <script>
         function excluirJogo(e, id, n) {
             if (confirm("Excluir '" + n + "'?")) {
@@ -212,5 +234,26 @@
                 document.body.appendChild(f); f.submit();
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const tbody = document.getElementById('tabelaJogosBody');
+
+            if (tbody) {
+                new Sortable(tbody, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    filter: '.btn-group, input, a, button', // Impede que clicar nos botões ou inputs acione o drag
+                    preventOnFilter: false,
+                    onEnd: function () {
+                        // Atualiza os inputs numéricos de ordem sequencialmente (0, 1, 2, 3...)
+                        const inputs = tbody.querySelectorAll('.input-ordem');
+                        inputs.forEach((input, index) => {
+                            input.value = index;
+                        });
+                    }
+                });
+            }
+        });
     </script>
 }
