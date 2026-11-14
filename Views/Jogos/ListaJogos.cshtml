@@ -80,13 +80,17 @@
     }
 
     .img-capa {
-        width: 45px;
-        height: 62px;
-        object-fit: cover;
+        width: 46px;
+        height: auto;
+        max-height: 68px;
         border-radius: 4px;
-        border: 1px solid #3d3d3d;
-        background-color: #141414;
-        pointer-events: none; /* Evita que o clique na imagem trave o drag */
+        border: none;
+        background-color: transparent;
+        pointer-events: none;
+        display: block;
+        margin: 0 auto;
+        transform: translateZ(0);
+        backface-visibility: hidden;
     }
 
     .col-id {
